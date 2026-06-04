@@ -12,6 +12,9 @@ import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
 import com.odom.applimit.MainActivity
 
 class BlockingOverlayManager(private val context: Context) {
@@ -38,14 +41,10 @@ class BlockingOverlayManager(private val context: Context) {
             PixelFormat.TRANSLUCENT
         )
 
-        val container = BlockingLayout(context).apply {
+        val innerContent = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            setBackgroundColor(Color.argb(242, 10, 10, 20))
             setPadding(64, 64, 64, 64)
-            isFocusable = true
-            isFocusableInTouchMode = true
-
             addView(TextView(context).apply {
                 text = appName
                 textSize = 30f
@@ -70,6 +69,24 @@ class BlockingOverlayManager(private val context: Context) {
                 text = "Open App Limit"
                 setOnClickListener { openAppLimit() }
             })
+        }
+        val bannerAd = AdView(context).apply {
+            setAdSize(AdSize.BANNER)
+            adUnitId = BANNER_AD_UNIT_ID
+            loadAd(AdRequest.Builder().build())
+        }
+        val container = BlockingLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.argb(242, 10, 10, 20))
+            isFocusable = true
+            isFocusableInTouchMode = true
+            addView(innerContent, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+            ))
+            addView(bannerAd, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ))
         }
 
         try {
@@ -127,5 +144,10 @@ class BlockingOverlayManager(private val context: Context) {
         }
 
         override fun dispatchKeyEvent(event: KeyEvent): Boolean = true
+    }
+
+    companion object {
+        // Replace with your real banner ad unit ID before publishing
+        private const val BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"
     }
 }

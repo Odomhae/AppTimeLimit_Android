@@ -45,7 +45,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
 import com.odom.applimit.data.AppLimitEntity
 import com.odom.applimit.service.UsageMonitorService
 import kotlin.math.roundToInt
@@ -86,6 +90,7 @@ fun HomeScreen(
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("App Limit") }) },
+        bottomBar = { BannerAd() },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddLimit) {
                 Icon(Icons.Default.Add, contentDescription = "Add limit")
@@ -214,6 +219,21 @@ private fun LimitCard(
             )
         }
     }
+}
+
+@Composable
+private fun BannerAd() {
+    AndroidView(
+        modifier = Modifier.fillMaxWidth(),
+        factory = { ctx ->
+            AdView(ctx).apply {
+                // Replace with your real banner ad unit ID before publishing
+                setAdSize(AdSize.BANNER)
+                adUnitId = "ca-app-pub-3940256099942544/6300978111"
+                loadAd(AdRequest.Builder().build())
+            }
+        }
+    )
 }
 
 private fun formatMinutes(minutes: Int): String = when {
