@@ -1,0 +1,166 @@
+package com.odom.applimit.ui
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import kotlin.math.roundToInt
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddLimitScreen(
+    onBack: () -> Unit,
+    viewModel: AppLimitViewModel = hiltViewModel()
+) {
+    var selectedPackage by remember { mutableStateOf<String?>(null) }
+    var limitMinutes by remember { mutableIntStateOf(30) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    val installedApps = remember { viewModel.getInstalledApps() }
+    val filtered = remember(searchQuery) {
+        installedApps.filter {
+            it.label.contains(searchQuery, ignoreCase = true) ||
+                    it.packageName.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(if (selectedPackage == null) "Select App" else "Set Limit") },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        if (selectedPackage != null) selectedPackage = null
+                        else onBack()
+                    }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp)
+        ) {
+            if (selectedPackage == null) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Search apps") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    singleLine = true
+                )
+                LazyColumn {
+                    items(filtered, key = { it.packageName }) { app ->
+                        ListItem(
+                            headlineContent = { Text(app.label) },
+                            supportingContent = {
+                                Text(
+                                    app.packageName,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            modifier = Modifier.clickable { selectedPackage = app.packageName }
+                        )
+                        HorizontalDivider()
+                    }
+                }
+            } else {
+                val appLabel = installedApps.find { it.packageName == selectedPackage }?.label
+                    ?: selectedPackage ?: ""
+
+                Spacer(modifier = Modifier.height(24.dp))
+                Text("App", style = MaterialTheme.typography.labelMedium)
+                Text(appLabel, style = MaterialTheme.typography.titleLarge)
+                Spacer(modifier = Modifier.height(40.dp))
+
+                Text("Daily limit", style = MaterialTheme.typography.labelMedium)
+                Text(
+                    formatMinutes(limitMinutes),
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                // steps=46 gives 48 positions: 5,10,...,240 (5-minute increments, 235/47 = 5 exactly)
+                Slider(
+                    value = limitMinutes.toFloat(),
+                    onValueChange = { limitMinutes = (it / 5f).roundToInt() * 5 },
+                    valueRange = 5f..240f,
+                    steps = 46,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("5 min", style = MaterialTheme.typography.bodySmall)
+                    Text("4 hrs", style = MaterialTheme.typography.bodySmall)
+                }
+                Spacer(modifier = Modifier.height(40.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { selectedPackage = null },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Back") }
+                    Button(
+                        onClick = {
+                            selectedPackage?.let { pkg ->
+                                viewModel.upsertLimit(pkg, limitMinutes)
+                                onBack()
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) { Text("Save") }
+                }
+            }
+        }
+    }
+}
+
+private fun formatMinutes(minutes: Int): String = when {
+    minutes < 60 -> "$minutes min"
+    minutes % 60 == 0 -> "${minutes / 60} hr"
+    else -> "${minutes / 60} hr ${minutes % 60} min"
+}
