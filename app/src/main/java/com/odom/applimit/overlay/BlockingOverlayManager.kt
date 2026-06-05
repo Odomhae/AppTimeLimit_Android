@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.os.CountDownTimer
 import android.provider.Settings
 import android.view.Gravity
 import android.view.KeyEvent
@@ -17,10 +18,12 @@ import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.odom.applimit.MainActivity
 import com.odom.applimit.R
+import java.util.Calendar
 
 class BlockingOverlayManager(private val context: Context) {
     private val windowManager = context.getSystemService(WindowManager::class.java)
     private var overlayView: BlockingLayout? = null
+    private var countDownTimer: CountDownTimer? = null
     var currentPackage: String? = null
         private set
 
@@ -64,12 +67,42 @@ class BlockingOverlayManager(private val context: Context) {
                 textSize = 16f
                 setTextColor(Color.LTGRAY)
                 gravity = Gravity.CENTER
-                setPadding(0, 0, 0, 48)
+                setPadding(0, 0, 0, 32)
+            })
+            val countdownView = TextView(context).apply {
+                textSize = 18f
+                setTextColor(Color.WHITE)
+                gravity = Gravity.CENTER
+                setPadding(0, 0, 0, 8)
+            }
+            addView(countdownView)
+            addView(TextView(context).apply {
+                text = context.getString(R.string.overlay_hint_edit)
+                textSize = 14f
+                setTextColor(Color.argb(180, 200, 200, 200))
+                gravity = Gravity.CENTER
+                setPadding(0, 0, 0, 32)
             })
             addView(Button(context).apply {
                 text = context.getString(R.string.overlay_open_app)
                 setOnClickListener { openAppLimit() }
             })
+
+            countDownTimer?.cancel()
+            countDownTimer = object : CountDownTimer(millisUntilMidnight(), 1_000L) {
+                override fun onTick(millisUntilFinished: Long) {
+                    val h = millisUntilFinished / 3_600_000
+                    val m = (millisUntilFinished % 3_600_000) / 60_000
+                    val s = (millisUntilFinished % 60_000) / 1_000
+                    countdownView.text = context.getString(
+                        R.string.overlay_resets_in,
+                        String.format("%02d:%02d:%02d", h, m, s)
+                    )
+                }
+                override fun onFinish() {
+                    countdownView.text = context.getString(R.string.overlay_resets_in, "00:00:00")
+                }
+            }.start()
         }
         val bannerAd = AdView(context).apply {
             setAdSize(AdSize.BANNER)
@@ -100,6 +133,8 @@ class BlockingOverlayManager(private val context: Context) {
     }
 
     fun hide() {
+        countDownTimer?.cancel()
+        countDownTimer = null
         overlayView?.let {
             try { windowManager.removeView(it) } catch (_: Exception) {}
         }
@@ -108,6 +143,17 @@ class BlockingOverlayManager(private val context: Context) {
     }
 
     fun isShowing(): Boolean = overlayView != null
+
+    private fun millisUntilMidnight(): Long {
+        val cal = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        return cal.timeInMillis - System.currentTimeMillis()
+    }
 
     private fun openAppLimit() {
         context.startActivity(
