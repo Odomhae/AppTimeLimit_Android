@@ -30,6 +30,9 @@
     <string name="btn_continue">Continue</string>
     <string name="btn_grant">Grant</string>
 
+    <!-- Add limit screen -->
+    <string name="loading_apps">Loading installed apps…</string>
+
     <!-- AdMob IDs — replace test values with real ones before publishing -->
     <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
     <string name="admob_interstitial_id">ca-app-pub-3940256099942544/1033173712</string>

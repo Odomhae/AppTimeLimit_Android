@@ -11,9 +11,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -27,16 +30,21 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.odom.applimit.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,11 +57,32 @@ fun AddLimitScreen(
     var limitMinutes by remember { mutableIntStateOf(30) }
     var searchQuery by remember { mutableStateOf("") }
 
-    val installedApps = remember { viewModel.getInstalledApps() }
-    val filtered = remember(searchQuery) {
-        installedApps.filter {
+    // Null while loading; non-null once the IO fetch completes
+    var installedApps by remember { mutableStateOf<List<InstalledApp>?>(null) }
+    LaunchedEffect(Unit) {
+        installedApps = withContext(Dispatchers.IO) { viewModel.getInstalledApps() }
+    }
+
+    val filtered = remember(searchQuery, installedApps) {
+        installedApps?.filter {
             it.label.contains(searchQuery, ignoreCase = true) ||
                     it.packageName.contains(searchQuery, ignoreCase = true)
+        } ?: emptyList()
+    }
+
+    // Progress dialog while the package manager query runs
+    if (installedApps == null) {
+        Dialog(onDismissRequest = {}) {
+            Card(shape = RoundedCornerShape(16.dp)) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator()
+                    Text(stringResource(R.string.loading_apps))
+                }
+            }
         }
     }
 
@@ -115,7 +144,7 @@ fun AddLimitScreen(
                     }
                 }
             } else {
-                val appLabel = installedApps.find { it.packageName == selectedPackage }?.label
+                val appLabel = installedApps?.find { it.packageName == selectedPackage }?.label
                     ?: selectedPackage ?: ""
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -129,7 +158,6 @@ fun AddLimitScreen(
                     style = MaterialTheme.typography.headlineMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                // steps=46 gives 48 positions: 5,10,...,240 (5-minute increments, 235/47 = 5 exactly)
                 Slider(
                     value = limitMinutes.toFloat(),
                     onValueChange = { limitMinutes = (it / 5f).roundToInt() * 5 },
