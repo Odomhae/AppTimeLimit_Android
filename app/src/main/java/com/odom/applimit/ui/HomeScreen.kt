@@ -45,11 +45,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
+import com.odom.applimit.R
 import com.odom.applimit.data.AppLimitEntity
 import com.odom.applimit.service.UsageMonitorService
 import kotlin.math.roundToInt
@@ -58,6 +60,7 @@ import kotlin.math.roundToInt
 @Composable
 fun HomeScreen(
     onAddLimit: () -> Unit,
+    onShowAd: () -> Unit = {},
     viewModel: AppLimitViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -83,17 +86,18 @@ fun HomeScreen(
             onDismiss = { editingEntity = null },
             onConfirm = { newMinutes ->
                 viewModel.upsertLimit(entity.packageName, newMinutes)
+                onShowAd()
                 editingEntity = null
             }
         )
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("App Limit") }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.home_title)) }) },
         bottomBar = { BannerAd() },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddLimit) {
-                Icon(Icons.Default.Add, contentDescription = "Add limit")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_add_limit))
             }
         }
     ) { paddingValues ->
@@ -103,7 +107,7 @@ fun HomeScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    "No limits set yet.\nTap + to add your first app limit.",
+                    stringResource(R.string.home_empty),
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
@@ -119,7 +123,10 @@ fun HomeScreen(
                         usedMinutes = ((usageMap[limit.packageName] ?: 0L) / 60_000L).toInt(),
                         appName = resolveAppName(context.packageManager, limit.packageName),
                         onEditLimit = { editingEntity = limit },
-                        onReset = { viewModel.resetUsage(limit) },
+                        onReset = {
+                            viewModel.resetUsage(limit)
+                            onShowAd()
+                        },
                         onDelete = { viewModel.deleteLimit(limit) }
                     )
                 }
@@ -158,16 +165,16 @@ private fun EditLimitDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("5 min", style = MaterialTheme.typography.bodySmall)
-                    Text("4 hrs", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.slider_min), style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.slider_max), style = MaterialTheme.typography.bodySmall)
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(minutes) }) { Text("Save") }
+            TextButton(onClick = { onConfirm(minutes) }) { Text(stringResource(R.string.btn_save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.btn_cancel)) }
         }
     )
 }
@@ -201,13 +208,13 @@ private fun LimitCard(
                     )
                 }
                 IconButton(onClick = onEditLimit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit limit")
+                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_edit_limit))
                 }
                 IconButton(onClick = onReset) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Reset usage")
+                    Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_reset_usage))
                 }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Remove limit")
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_remove_limit))
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -227,9 +234,8 @@ private fun BannerAd() {
         modifier = Modifier.fillMaxWidth(),
         factory = { ctx ->
             AdView(ctx).apply {
-                // Replace with your real banner ad unit ID before publishing
                 setAdSize(AdSize.BANNER)
-                adUnitId = "ca-app-pub-3940256099942544/6300978111"
+                adUnitId = ctx.getString(R.string.admob_banner_id)
                 loadAd(AdRequest.Builder().build())
             }
         }

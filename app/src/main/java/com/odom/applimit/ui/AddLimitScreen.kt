@@ -34,7 +34,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.odom.applimit.R
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,7 +60,14 @@ fun AddLimitScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (selectedPackage == null) "Select App" else "Set Limit") },
+                title = {
+                    Text(
+                        stringResource(
+                            if (selectedPackage == null) R.string.add_limit_select_app
+                            else R.string.add_limit_set_limit
+                        )
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         if (selectedPackage != null) selectedPackage = null
@@ -66,7 +75,7 @@ fun AddLimitScreen(
                     }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.btn_back)
                         )
                     }
                 }
@@ -83,7 +92,7 @@ fun AddLimitScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    label = { Text("Search apps") },
+                    label = { Text(stringResource(R.string.search_apps)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
@@ -110,11 +119,11 @@ fun AddLimitScreen(
                     ?: selectedPackage ?: ""
 
                 Spacer(modifier = Modifier.height(24.dp))
-                Text("App", style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(R.string.label_app), style = MaterialTheme.typography.labelMedium)
                 Text(appLabel, style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(40.dp))
 
-                Text("Daily limit", style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(R.string.label_daily_limit), style = MaterialTheme.typography.labelMedium)
                 Text(
                     formatMinutes(limitMinutes),
                     style = MaterialTheme.typography.headlineMedium
@@ -132,8 +141,8 @@ fun AddLimitScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("5 min", style = MaterialTheme.typography.bodySmall)
-                    Text("4 hrs", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.slider_min), style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.slider_max), style = MaterialTheme.typography.bodySmall)
                 }
                 Spacer(modifier = Modifier.height(40.dp))
                 Row(
@@ -143,7 +152,7 @@ fun AddLimitScreen(
                     OutlinedButton(
                         onClick = { selectedPackage = null },
                         modifier = Modifier.weight(1f)
-                    ) { Text("Back") }
+                    ) { Text(stringResource(R.string.btn_back)) }
                     Button(
                         onClick = {
                             selectedPackage?.let { pkg ->
@@ -152,7 +161,7 @@ fun AddLimitScreen(
                             }
                         },
                         modifier = Modifier.weight(1f)
-                    ) { Text("Save") }
+                    ) { Text(stringResource(R.string.btn_save)) }
                 }
             }
         }

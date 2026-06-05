@@ -11,6 +11,7 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.odom.applimit.R
 import com.odom.applimit.ui.AppNavGraph
 import com.odom.applimit.ui.theme.AppLimitTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,7 +29,7 @@ class MainActivity : ComponentActivity() {
         handleBlockerIntent(intent)
         setContent {
             AppLimitTheme {
-                AppNavGraph()
+                AppNavGraph(onShowAd = { tryShowAd() })
             }
         }
     }
@@ -48,7 +49,7 @@ class MainActivity : ComponentActivity() {
     private fun loadInterstitialAd() {
         InterstitialAd.load(
             this,
-            AD_UNIT_ID,
+            getString(R.string.admob_interstitial_id),
             AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
@@ -91,9 +92,5 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_FROM_BLOCKER = "from_blocker"
-
-        // Replace with your real AdMob interstitial ad unit ID before publishing.
-        // This is Google's test ID — it always returns a test ad.
-        private const val AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
     }
 }

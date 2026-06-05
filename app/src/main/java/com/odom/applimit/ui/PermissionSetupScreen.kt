@@ -38,7 +38,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.odom.applimit.R
 
 data class PermissionStatus(
     val id: String,
@@ -66,20 +68,20 @@ fun hasUsageStatsPermission(context: Context): Boolean {
 private fun buildPermissionList(context: Context): List<PermissionStatus> = listOf(
     PermissionStatus(
         id = "usage_stats",
-        title = "Usage Access",
-        description = "Tracks how long each app is used per day",
+        title = context.getString(R.string.perm_usage_title),
+        description = context.getString(R.string.perm_usage_desc),
         granted = hasUsageStatsPermission(context)
     ),
     PermissionStatus(
         id = "overlay",
-        title = "Draw Over Other Apps",
-        description = "Shows a blocking screen when the limit is reached",
+        title = context.getString(R.string.perm_overlay_title),
+        description = context.getString(R.string.perm_overlay_desc),
         granted = Settings.canDrawOverlays(context)
     ),
     PermissionStatus(
         id = "notifications",
-        title = "Notifications",
-        description = "Sends warnings when approaching your limit",
+        title = context.getString(R.string.perm_notif_title),
+        description = context.getString(R.string.perm_notif_desc),
         granted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
                     android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -110,9 +112,9 @@ fun PermissionSetupScreen(onAllGranted: () -> Unit) {
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Setup Required", style = MaterialTheme.typography.headlineMedium)
+        Text(stringResource(R.string.perm_title), style = MaterialTheme.typography.headlineMedium)
         Text(
-            "App Limit needs the following permissions to monitor and block apps.",
+            stringResource(R.string.perm_body),
             style = MaterialTheme.typography.bodyMedium
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -146,7 +148,7 @@ fun PermissionSetupScreen(onAllGranted: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             enabled = permissions.all { it.granted }
         ) {
-            Text("Continue")
+            Text(stringResource(R.string.btn_continue))
         }
     }
 }
@@ -171,7 +173,7 @@ private fun PermissionRow(status: PermissionStatus, onGrant: () -> Unit) {
             }
             if (!status.granted) {
                 Spacer(modifier = Modifier.width(8.dp))
-                Button(onClick = onGrant) { Text("Grant") }
+                Button(onClick = onGrant) { Text(stringResource(R.string.btn_grant)) }
             }
         }
     }

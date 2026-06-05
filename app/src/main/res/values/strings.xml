@@ -1,3 +1,47 @@
 <resources>
     <string name="app_name">appLimit</string>
+
+    <!-- Blocking overlay -->
+    <string name="overlay_limit_reached">Daily limit reached</string>
+    <string name="overlay_usage_stats">%1$d / %2$d minutes used today</string>
+    <string name="overlay_open_app">Open App Limit</string>
+
+    <!-- Home screen -->
+    <string name="home_title">App Limit</string>
+    <string name="home_empty">No limits set yet.\nTap + to add your first app limit.</string>
+    <string name="cd_add_limit">Add limit</string>
+    <string name="cd_edit_limit">Edit limit</string>
+    <string name="cd_reset_usage">Reset usage</string>
+    <string name="cd_remove_limit">Remove limit</string>
+
+    <!-- Add limit screen -->
+    <string name="add_limit_select_app">Select App</string>
+    <string name="add_limit_set_limit">Set Limit</string>
+    <string name="label_app">App</string>
+    <string name="label_daily_limit">Daily limit</string>
+    <string name="search_apps">Search apps</string>
+
+    <!-- Shared UI -->
+    <string name="slider_min">5 min</string>
+    <string name="slider_max">4 hrs</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_back">Back</string>
+    <string name="btn_continue">Continue</string>
+    <string name="btn_grant">Grant</string>
+
+    <!-- AdMob IDs — replace test values with real ones before publishing -->
+    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+    <string name="admob_interstitial_id">ca-app-pub-3940256099942544/1033173712</string>
+    <string name="admob_banner_id">ca-app-pub-3940256099942544/6300978111</string>
+
+    <!-- Permission setup screen -->
+    <string name="perm_title">Setup Required</string>
+    <string name="perm_body">App Limit needs the following permissions to monitor and block apps.</string>
+    <string name="perm_usage_title">Usage Access</string>
+    <string name="perm_usage_desc">Tracks how long each app is used per day</string>
+    <string name="perm_overlay_title">Draw Over Other Apps</string>
+    <string name="perm_overlay_desc">Shows a blocking screen when the limit is reached</string>
+    <string name="perm_notif_title">Notifications</string>
+    <string name="perm_notif_desc">Sends warnings when approaching your limit</string>
 </resources>

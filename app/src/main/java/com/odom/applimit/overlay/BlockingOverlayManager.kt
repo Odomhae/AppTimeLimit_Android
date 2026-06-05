@@ -16,6 +16,7 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.odom.applimit.MainActivity
+import com.odom.applimit.R
 
 class BlockingOverlayManager(private val context: Context) {
     private val windowManager = context.getSystemService(WindowManager::class.java)
@@ -52,27 +53,27 @@ class BlockingOverlayManager(private val context: Context) {
                 gravity = Gravity.CENTER
             })
             addView(TextView(context).apply {
-                text = "Daily limit reached"
+                text = context.getString(R.string.overlay_limit_reached)
                 textSize = 20f
                 setTextColor(Color.argb(220, 255, 80, 80))
                 gravity = Gravity.CENTER
                 setPadding(0, 24, 0, 8)
             })
             addView(TextView(context).apply {
-                text = "$usedMinutes / $limitMinutes minutes used today"
+                text = context.getString(R.string.overlay_usage_stats, usedMinutes, limitMinutes)
                 textSize = 16f
                 setTextColor(Color.LTGRAY)
                 gravity = Gravity.CENTER
                 setPadding(0, 0, 0, 48)
             })
             addView(Button(context).apply {
-                text = "Open App Limit"
+                text = context.getString(R.string.overlay_open_app)
                 setOnClickListener { openAppLimit() }
             })
         }
         val bannerAd = AdView(context).apply {
             setAdSize(AdSize.BANNER)
-            adUnitId = BANNER_AD_UNIT_ID
+            adUnitId = context.getString(R.string.admob_banner_id)
             loadAd(AdRequest.Builder().build())
         }
         val container = BlockingLayout(context).apply {
@@ -144,10 +145,5 @@ class BlockingOverlayManager(private val context: Context) {
         }
 
         override fun dispatchKeyEvent(event: KeyEvent): Boolean = true
-    }
-
-    companion object {
-        // Replace with your real banner ad unit ID before publishing
-        private const val BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"
     }
 }

@@ -8,7 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 @Composable
-fun AppNavGraph() {
+fun AppNavGraph(onShowAd: () -> Unit = {}) {
     val context = LocalContext.current
     val navController = rememberNavController()
     val startDestination = remember {
@@ -26,7 +26,10 @@ fun AppNavGraph() {
             )
         }
         composable("home") {
-            HomeScreen(onAddLimit = { navController.navigate("add_limit") })
+            HomeScreen(
+                onAddLimit = { navController.navigate("add_limit") },
+                onShowAd = onShowAd
+            )
         }
         composable("add_limit") {
             AddLimitScreen(onBack = { navController.popBackStack() })
