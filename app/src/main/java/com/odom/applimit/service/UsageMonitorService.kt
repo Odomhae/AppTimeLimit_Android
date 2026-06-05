@@ -5,6 +5,7 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import com.odom.applimit.data.AppDatabase
@@ -197,12 +198,15 @@ class UsageMonitorService : Service() {
         return currentForeground
     }
 
-    @Suppress("DEPRECATION")
     private fun getAppName(packageName: String): String {
         return try {
-            packageManager.getApplicationLabel(
+            val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0L))
+            } else {
+                @Suppress("DEPRECATION")
                 packageManager.getApplicationInfo(packageName, 0)
-            ).toString()
+            }
+            packageManager.getApplicationLabel(info).toString()
         } catch (_: PackageManager.NameNotFoundException) {
             packageName
         }

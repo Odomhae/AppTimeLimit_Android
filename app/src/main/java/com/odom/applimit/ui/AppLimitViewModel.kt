@@ -5,6 +5,7 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.odom.applimit.data.AppLimitEntity
@@ -108,17 +109,27 @@ class AppLimitViewModel @Inject constructor(
         }
     }
 
-    @Suppress("DEPRECATION")
     fun getInstalledApps(): List<InstalledApp> {
         val pm = context.packageManager
         val launcherIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        return pm.queryIntentActivities(launcherIntent, 0)
+        val activities = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.queryIntentActivities(launcherIntent, PackageManager.ResolveInfoFlags.of(0L))
+        } else {
+            @Suppress("DEPRECATION")
+            pm.queryIntentActivities(launcherIntent, 0)
+        }
+        return activities
             .map { it.activityInfo.packageName }
             .toSet()
             .filter { it != context.packageName }
             .mapNotNull { pkg ->
                 try {
-                    val info = pm.getApplicationInfo(pkg, 0)
+                    val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        pm.getApplicationInfo(pkg, PackageManager.ApplicationInfoFlags.of(0L))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        pm.getApplicationInfo(pkg, 0)
+                    }
                     InstalledApp(pkg, pm.getApplicationLabel(info).toString())
                 } catch (_: PackageManager.NameNotFoundException) {
                     null

@@ -248,10 +248,15 @@ private fun formatMinutes(minutes: Int): String = when {
     else -> "${minutes / 60} hr ${minutes % 60} min"
 }
 
-@Suppress("DEPRECATION")
 private fun resolveAppName(pm: PackageManager, packageName: String): String =
     try {
-        pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0)).toString()
+        val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0L))
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getApplicationInfo(packageName, 0)
+        }
+        pm.getApplicationLabel(info).toString()
     } catch (_: PackageManager.NameNotFoundException) {
         packageName
     }
