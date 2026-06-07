@@ -106,7 +106,7 @@ class BlockingOverlayManager(private val context: Context) {
         }
         val bannerAd = AdView(context).apply {
             setAdSize(AdSize.BANNER)
-            adUnitId = context.getString(R.string.admob_banner_id)
+            adUnitId = context.getString(R.string.TEST_admob_banner_id)
             loadAd(AdRequest.Builder().build())
         }
         val container = BlockingLayout(context).apply {

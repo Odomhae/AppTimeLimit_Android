@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
     private fun loadInterstitialAd() {
         InterstitialAd.load(
             this,
-            getString(R.string.admob_interstitial_id),
+            getString(R.string.TEST_admob_interstitial_id),
             AdRequest.Builder().build(),
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {

@@ -39,6 +39,9 @@ class AppLimitViewModel @Inject constructor(
     private val _usageMap = MutableStateFlow<Map<String, Long>>(emptyMap())
     val usageMap: StateFlow<Map<String, Long>> = _usageMap.asStateFlow()
 
+    private val _isLoadingUsage = MutableStateFlow(true)
+    val isLoadingUsage: StateFlow<Boolean> = _isLoadingUsage.asStateFlow()
+
     init {
         viewModelScope.launch(Dispatchers.IO) {
             while (true) {
@@ -47,6 +50,7 @@ class AppLimitViewModel @Inject constructor(
                     _usageMap.value = currentLimits.associate { entity ->
                         entity.packageName to effectiveUsageMs(entity)
                     }
+                    _isLoadingUsage.value = false
                 }
                 delay(3_000L)
             }

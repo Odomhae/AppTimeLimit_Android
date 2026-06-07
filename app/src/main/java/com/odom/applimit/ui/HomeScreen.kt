@@ -66,6 +66,7 @@ fun HomeScreen(
     val context = LocalContext.current
     val limits by viewModel.limits.collectAsState()
     val usageMap by viewModel.usageMap.collectAsState()
+    val isLoadingUsage by viewModel.isLoadingUsage.collectAsState()
 
     // Non-null when the edit-limit dialog is open for a specific app
     var editingEntity by remember { mutableStateOf<AppLimitEntity?>(null) }
@@ -101,35 +102,44 @@ fun HomeScreen(
             }
         }
     ) { paddingValues ->
-        if (limits.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    stringResource(R.string.home_empty),
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(limits, key = { it.packageName }) { limit ->
-                    LimitCard(
-                        limit = limit,
-                        usedMinutes = ((usageMap[limit.packageName] ?: 0L) / 60_000L).toInt(),
-                        appName = resolveAppName(context.packageManager, limit.packageName),
-                        onEditLimit = { editingEntity = limit },
-                        onReset = {
-                            viewModel.resetUsage(limit)
-                            onShowAd()
-                        },
-                        onDelete = { viewModel.deleteLimit(limit) }
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (limits.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        stringResource(R.string.home_empty),
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(limits, key = { it.packageName }) { limit ->
+                        LimitCard(
+                            limit = limit,
+                            usedMinutes = ((usageMap[limit.packageName] ?: 0L) / 60_000L).toInt(),
+                            appName = resolveAppName(context.packageManager, limit.packageName),
+                            onEditLimit = { editingEntity = limit },
+                            onReset = {
+                                viewModel.resetUsage(limit)
+                                onShowAd()
+                            },
+                            onDelete = { viewModel.deleteLimit(limit) }
+                        )
+                    }
+                }
+            }
+            if (limits.isNotEmpty() && isLoadingUsage) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                )
             }
         }
     }
@@ -235,7 +245,7 @@ private fun BannerAd() {
         factory = { ctx ->
             AdView(ctx).apply {
                 setAdSize(AdSize.BANNER)
-                adUnitId = ctx.getString(R.string.admob_banner_id)
+                adUnitId = ctx.getString(R.string.TEST_admob_banner_id)
                 loadAd(AdRequest.Builder().build())
             }
         }
