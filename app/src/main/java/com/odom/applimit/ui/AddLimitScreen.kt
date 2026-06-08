@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -53,6 +54,7 @@ fun AddLimitScreen(
     onBack: () -> Unit,
     viewModel: AppLimitViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     var selectedPackage by remember { mutableStateOf<String?>(null) }
     var limitMinutes by remember { mutableIntStateOf(30) }
     var searchQuery by remember { mutableStateOf("") }
@@ -154,7 +156,7 @@ fun AddLimitScreen(
 
                 Text(stringResource(R.string.label_daily_limit), style = MaterialTheme.typography.labelMedium)
                 Text(
-                    formatMinutes(limitMinutes),
+                    formatMinutes(context, limitMinutes),
                     style = MaterialTheme.typography.headlineMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -196,8 +198,3 @@ fun AddLimitScreen(
     }
 }
 
-private fun formatMinutes(minutes: Int): String = when {
-    minutes < 60 -> "$minutes min"
-    minutes % 60 == 0 -> "${minutes / 60} hr"
-    else -> "${minutes / 60} hr ${minutes % 60} min"
-}

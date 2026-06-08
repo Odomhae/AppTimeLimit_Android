@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.odom.applimit.MainActivity
+import com.odom.applimit.R
 
 class UsageNotifier(private val context: Context) {
     companion object {
@@ -26,16 +27,25 @@ class UsageNotifier(private val context: Context) {
     private fun createChannels() {
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_WARNING, "Usage Warning", NotificationManager.IMPORTANCE_HIGH)
-                .apply { description = "Warns when nearing app time limit" }
+            NotificationChannel(
+                CHANNEL_WARNING,
+                context.getString(R.string.notif_channel_warning_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply { description = context.getString(R.string.notif_channel_warning_desc) }
         )
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_BLOCKED, "App Blocked", NotificationManager.IMPORTANCE_HIGH)
-                .apply { description = "Notifies when app limit is exceeded" }
+            NotificationChannel(
+                CHANNEL_BLOCKED,
+                context.getString(R.string.notif_channel_blocked_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply { description = context.getString(R.string.notif_channel_blocked_desc) }
         )
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_SERVICE, "Usage Monitor", NotificationManager.IMPORTANCE_LOW)
-                .apply { description = "Background usage monitor" }
+            NotificationChannel(
+                CHANNEL_SERVICE,
+                context.getString(R.string.notif_channel_service_name),
+                NotificationManager.IMPORTANCE_LOW
+            ).apply { description = context.getString(R.string.notif_channel_service_desc) }
         )
     }
 
@@ -47,8 +57,8 @@ class UsageNotifier(private val context: Context) {
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_WARNING)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setContentTitle("$appName – Time limit approaching")
-            .setContentText("$remainingMinutes minute(s) remaining today")
+            .setContentTitle(context.getString(R.string.notif_warning_title, appName))
+            .setContentText(context.getString(R.string.notif_warning_text, remainingMinutes))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(intent)
             .setAutoCancel(true)
@@ -60,8 +70,8 @@ class UsageNotifier(private val context: Context) {
     fun sendBlocked(packageName: String, appName: String) {
         val notification = NotificationCompat.Builder(context, CHANNEL_BLOCKED)
             .setSmallIcon(android.R.drawable.ic_delete)
-            .setContentTitle("$appName – Daily limit reached")
-            .setContentText("You've used your daily allowance for $appName")
+            .setContentTitle(context.getString(R.string.notif_blocked_title, appName))
+            .setContentText(context.getString(R.string.notif_blocked_text, appName))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
@@ -72,8 +82,8 @@ class UsageNotifier(private val context: Context) {
     fun buildServiceNotification(): Notification =
         NotificationCompat.Builder(context, CHANNEL_SERVICE)
             .setSmallIcon(android.R.drawable.ic_menu_recent_history)
-            .setContentTitle("App Limit Monitor")
-            .setContentText("Monitoring app usage in the background")
+            .setContentTitle(context.getString(R.string.notif_service_title))
+            .setContentText(context.getString(R.string.notif_service_text))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .build()

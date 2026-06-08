@@ -1,8 +1,11 @@
 package com.odom.applimit.ui
 
+import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,8 +48,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.gms.ads.AdRequest
@@ -68,8 +72,47 @@ fun HomeScreen(
     val usageMap by viewModel.usageMap.collectAsState()
     val isLoadingUsage by viewModel.isLoadingUsage.collectAsState()
 
-    // Non-null when the edit-limit dialog is open for a specific app
     var editingEntity by remember { mutableStateOf<AppLimitEntity?>(null) }
+    var showExitDialog by remember { mutableStateOf(false) }
+
+    val exitAdView = remember {
+        AdView(context).apply {
+            setAdSize(AdSize.BANNER)
+            adUnitId = context.getString(R.string.TEST_admob_banner_id)
+            loadAd(AdRequest.Builder().build())
+        }
+    }
+    DisposableEffect(exitAdView) {
+        onDispose { exitAdView.destroy() }
+    }
+
+    BackHandler { showExitDialog = true }
+
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text(stringResource(R.string.exit_dialog_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text(stringResource(R.string.exit_dialog_message))
+                    AndroidView(
+                        factory = { exitAdView },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { (context as? Activity)?.finish() }) {
+                    Text(stringResource(R.string.exit_dialog_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
+    }
 
     LaunchedEffect(Unit) {
         val intent = Intent(context, UsageMonitorService::class.java)
@@ -152,6 +195,7 @@ private fun EditLimitDialog(
     onDismiss: () -> Unit,
     onConfirm: (Int) -> Unit
 ) {
+    val context = LocalContext.current
     var minutes by remember { mutableIntStateOf(currentMinutes) }
 
     AlertDialog(
@@ -160,7 +204,7 @@ private fun EditLimitDialog(
         text = {
             Column {
                 Text(
-                    formatMinutes(minutes),
+                    formatMinutes(context, minutes),
                     style = MaterialTheme.typography.headlineSmall
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -198,6 +242,7 @@ private fun LimitCard(
     onReset: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val context = LocalContext.current
     val progress = (usedMinutes.toFloat() / limit.limitMinutes).coerceIn(0f, 1f)
     val exceeded = usedMinutes >= limit.limitMinutes
 
@@ -211,7 +256,11 @@ private fun LimitCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(appName, style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "$usedMinutes / ${formatMinutes(limit.limitMinutes)}",
+                        stringResource(
+                            R.string.usage_progress,
+                            formatMinutes(context, usedMinutes),
+                            formatMinutes(context, limit.limitMinutes)
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = if (exceeded) MaterialTheme.colorScheme.error
                         else MaterialTheme.colorScheme.onSurfaceVariant
@@ -252,10 +301,10 @@ private fun BannerAd() {
     )
 }
 
-private fun formatMinutes(minutes: Int): String = when {
-    minutes < 60 -> "$minutes min"
-    minutes % 60 == 0 -> "${minutes / 60} hr"
-    else -> "${minutes / 60} hr ${minutes % 60} min"
+internal fun formatMinutes(context: Context, minutes: Int): String = when {
+    minutes < 60 -> context.getString(R.string.time_minutes, minutes)
+    minutes % 60 == 0 -> context.getString(R.string.time_hours, minutes / 60)
+    else -> context.getString(R.string.time_hours_minutes, minutes / 60, minutes % 60)
 }
 
 private fun resolveAppName(pm: PackageManager, packageName: String): String =
