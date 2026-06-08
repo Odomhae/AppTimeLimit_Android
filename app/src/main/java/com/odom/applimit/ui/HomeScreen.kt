@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -47,10 +50,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -58,6 +64,7 @@ import com.google.android.gms.ads.AdView
 import com.odom.applimit.R
 import com.odom.applimit.data.AppLimitEntity
 import com.odom.applimit.service.UsageMonitorService
+import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -245,6 +252,11 @@ private fun LimitCard(
     val context = LocalContext.current
     val progress = (usedMinutes.toFloat() / limit.limitMinutes).coerceIn(0f, 1f)
     val exceeded = usedMinutes >= limit.limitMinutes
+    val icon = remember(limit.packageName) {
+        runCatching {
+            context.packageManager.getApplicationIcon(limit.packageName).toBitmap().asImageBitmap()
+        }.getOrNull()
+    }
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -253,6 +265,14 @@ private fun LimitCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                icon?.let {
+                    Image(
+                        bitmap = it,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp))
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(appName, style = MaterialTheme.typography.titleMedium)
                     Text(

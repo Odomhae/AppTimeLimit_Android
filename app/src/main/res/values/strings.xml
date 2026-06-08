@@ -59,6 +59,9 @@
     <string name="exit_dialog_message">The usage monitor will continue running in the background.</string>
     <string name="exit_dialog_confirm">Exit</string>
 
+    <!-- Snooze -->
+    <string name="snooze_button">Allow 15 min more</string>
+
     <!-- Add limit screen -->
     <string name="loading_apps">Loading installed apps…</string>
 

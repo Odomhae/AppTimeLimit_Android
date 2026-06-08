@@ -31,6 +31,9 @@ class UsageMonitorService : Service() {
     private lateinit var overlayManager: BlockingOverlayManager
     private lateinit var usageStatsManager: UsageStatsManager
     private lateinit var powerManager: PowerManager
+    companion object {
+        private const val SNOOZE_MINUTES = 15
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -118,8 +121,19 @@ class UsageMonitorService : Service() {
                     }
                     if (foregroundPackage == limit.packageName) {
                         val appName = getAppName(limit.packageName)
+                        val capturedLimit = limit
                         withContext(Dispatchers.Main) {
-                            overlayManager.show(limit.packageName, appName, usedMinutes, limitMinutes)
+                            overlayManager.show(limit.packageName, appName, usedMinutes, limitMinutes) {
+                                scope.launch(Dispatchers.IO) {
+                                    dao.update(
+                                        capturedLimit.copy(
+                                            limitMinutes = capturedLimit.limitMinutes + SNOOZE_MINUTES,
+                                            lastBlockedDate = ""
+                                        )
+                                    )
+                                }
+                                // 오버레이는 MainActivity가 포그라운드로 오면 서비스 폴링이 자동 숨김
+                            }
                         }
                     }
                 }

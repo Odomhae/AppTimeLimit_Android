@@ -59,6 +59,9 @@
     <string name="exit_dialog_message">사용량 모니터는 백그라운드에서 계속 실행됩니다.</string>
     <string name="exit_dialog_confirm">종료</string>
 
+    <!-- Snooze -->
+    <string name="snooze_button">15분 더 허용</string>
+
     <!-- Add limit screen -->
     <string name="loading_apps">설치된 앱 불러오는 중…</string>
 
