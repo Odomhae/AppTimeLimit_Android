@@ -81,6 +81,8 @@ fun HomeScreen(
 
     var editingEntity by remember { mutableStateOf<AppLimitEntity?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
+    var pendingResetEntity by remember { mutableStateOf<AppLimitEntity?>(null) }
+    var pendingDeleteEntity by remember { mutableStateOf<AppLimitEntity?>(null) }
 
     val exitAdView = remember {
         AdView(context).apply {
@@ -91,6 +93,17 @@ fun HomeScreen(
     }
     DisposableEffect(exitAdView) {
         onDispose { exitAdView.destroy() }
+    }
+
+    val confirmAdView = remember {
+        AdView(context).apply {
+            setAdSize(AdSize.BANNER)
+            adUnitId = context.getString(R.string.TEST_admob_banner_id)
+            loadAd(AdRequest.Builder().build())
+        }
+    }
+    DisposableEffect(confirmAdView) {
+        onDispose { confirmAdView.destroy() }
     }
 
     BackHandler { showExitDialog = true }
@@ -115,6 +128,57 @@ fun HomeScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showExitDialog = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
+    }
+
+    pendingResetEntity?.let { entity ->
+        val appName = resolveAppName(context.packageManager, entity.packageName)
+        AlertDialog(
+            onDismissRequest = { pendingResetEntity = null },
+            title = { Text(stringResource(R.string.confirm_reset_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text(stringResource(R.string.confirm_reset_message, appName))
+                    AndroidView(factory = { confirmAdView }, modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.resetUsage(entity)
+                    onShowAd()
+                    pendingResetEntity = null
+                }) { Text(stringResource(R.string.btn_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingResetEntity = null }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
+    }
+
+    pendingDeleteEntity?.let { entity ->
+        val appName = resolveAppName(context.packageManager, entity.packageName)
+        AlertDialog(
+            onDismissRequest = { pendingDeleteEntity = null },
+            title = { Text(stringResource(R.string.confirm_delete_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text(stringResource(R.string.confirm_delete_message, appName))
+                    AndroidView(factory = { confirmAdView }, modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteLimit(entity)
+                    pendingDeleteEntity = null
+                }) { Text(stringResource(R.string.btn_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDeleteEntity = null }) {
                     Text(stringResource(R.string.btn_cancel))
                 }
             }
@@ -175,11 +239,8 @@ fun HomeScreen(
                             usedMinutes = ((usageMap[limit.packageName] ?: 0L) / 60_000L).toInt(),
                             appName = resolveAppName(context.packageManager, limit.packageName),
                             onEditLimit = { editingEntity = limit },
-                            onReset = {
-                                viewModel.resetUsage(limit)
-                                onShowAd()
-                            },
-                            onDelete = { viewModel.deleteLimit(limit) }
+                            onReset = { pendingResetEntity = limit },
+                            onDelete = { pendingDeleteEntity = limit }
                         )
                     }
                 }

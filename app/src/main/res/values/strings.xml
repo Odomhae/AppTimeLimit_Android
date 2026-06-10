@@ -62,6 +62,16 @@
     <!-- Snooze -->
     <string name="snooze_button">Allow 15 min more</string>
 
+    <!-- Overlay: exit blocked app to home -->
+    <string name="overlay_exit_app">Exit App</string>
+
+    <!-- Confirmation dialogs for reset / delete -->
+    <string name="confirm_reset_title">Reset Usage</string>
+    <string name="confirm_reset_message">Reset today\'s usage time for %1$s?</string>
+    <string name="confirm_delete_title">Delete App</string>
+    <string name="confirm_delete_message">Delete from the list : %1$s?</string>
+    <string name="btn_confirm">Confirm</string>
+
     <!-- Add limit screen -->
     <string name="loading_apps">Loading installed apps…</string>
 

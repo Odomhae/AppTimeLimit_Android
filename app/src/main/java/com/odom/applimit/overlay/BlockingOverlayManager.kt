@@ -1,5 +1,6 @@
 package com.odom.applimit.overlay
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -11,6 +12,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.google.android.gms.ads.AdRequest
@@ -113,6 +115,28 @@ class BlockingOverlayManager(private val context: Context) {
                 }
             }.start()
         }
+
+        val closeButton = Button(context).apply {
+            text = "✕"
+            textSize = 20f
+            setBackgroundColor(Color.TRANSPARENT)
+            setTextColor(Color.WHITE)
+            contentDescription = context.getString(R.string.overlay_exit_app)
+            setOnClickListener { closeAll() }
+        }
+
+        val contentFrame = FrameLayout(context).apply {
+            addView(innerContent, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            ))
+            addView(closeButton, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP or Gravity.END
+            ))
+        }
+
         val bannerAd = AdView(context).apply {
             setAdSize(AdSize.BANNER)
             adUnitId = context.getString(R.string.TEST_admob_banner_id)
@@ -123,7 +147,7 @@ class BlockingOverlayManager(private val context: Context) {
             setBackgroundColor(Color.argb(242, 10, 10, 20))
             isFocusable = true
             isFocusableInTouchMode = true
-            addView(innerContent, LinearLayout.LayoutParams(
+            addView(contentFrame, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
             ))
             addView(bannerAd, LinearLayout.LayoutParams(
@@ -173,6 +197,21 @@ class BlockingOverlayManager(private val context: Context) {
                 putExtra(MainActivity.EXTRA_FROM_BLOCKER, true)
             }
         )
+    }
+
+    private fun closeAll() {
+        val pkg = currentPackage
+        context.startActivity(
+            Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+        )
+        if (pkg != null) {
+            val am = context.getSystemService(ActivityManager::class.java)
+            am.killBackgroundProcesses(pkg)
+        }
+        hide()
     }
 
     /**

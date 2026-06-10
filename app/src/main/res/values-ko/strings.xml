@@ -62,6 +62,16 @@
     <!-- Snooze -->
     <string name="snooze_button">15분 더 허용</string>
 
+    <!-- Overlay: exit blocked app to home -->
+    <string name="overlay_exit_app">앱 종료</string>
+
+    <!-- Confirmation dialogs for reset / delete -->
+    <string name="confirm_reset_title">사용량 초기화</string>
+    <string name="confirm_reset_message">%1$s의 오늘 사용 시간을 초기화하시겠어요?</string>
+    <string name="confirm_delete_title">리스트에서 삭제</string>
+    <string name="confirm_delete_message">%1$s 리스트에서 삭제하시겠어요?</string>
+    <string name="btn_confirm">확인</string>
+
     <!-- Add limit screen -->
     <string name="loading_apps">설치된 앱 불러오는 중…</string>
 
