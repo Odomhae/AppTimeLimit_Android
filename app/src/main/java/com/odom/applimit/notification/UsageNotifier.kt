@@ -68,11 +68,17 @@ class UsageNotifier(private val context: Context) {
     }
 
     fun sendBlocked(packageName: String, appName: String) {
+        val intent = PendingIntent.getActivity(
+            context, 1,
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE
+        )
         val notification = NotificationCompat.Builder(context, CHANNEL_BLOCKED)
             .setSmallIcon(android.R.drawable.ic_delete)
             .setContentTitle(context.getString(R.string.notif_blocked_title, appName))
             .setContentText(context.getString(R.string.notif_blocked_text, appName))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(intent)
             .setAutoCancel(true)
             .build()
         context.getSystemService(NotificationManager::class.java)

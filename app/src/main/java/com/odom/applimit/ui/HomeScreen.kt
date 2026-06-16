@@ -78,6 +78,7 @@ fun HomeScreen(
     val limits by viewModel.limits.collectAsState()
     val usageMap by viewModel.usageMap.collectAsState()
     val isLoadingUsage by viewModel.isLoadingUsage.collectAsState()
+    val isPaused by viewModel.isPaused.collectAsState()
 
     var editingEntity by remember { mutableStateOf<AppLimitEntity?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -216,41 +217,44 @@ fun HomeScreen(
             }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            if (limits.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        stringResource(R.string.home_empty),
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(limits, key = { it.packageName }) { limit ->
-                        LimitCard(
-                            limit = limit,
-                            usedMinutes = ((usageMap[limit.packageName] ?: 0L) / 60_000L).toInt(),
-                            appName = resolveAppName(context.packageManager, limit.packageName),
-                            onEditLimit = { editingEntity = limit },
-                            onReset = { pendingResetEntity = limit },
-                            onDelete = { pendingDeleteEntity = limit }
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            PauseButton(isPaused = isPaused, onToggle = { viewModel.togglePause() })
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                if (limits.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            stringResource(R.string.home_empty),
+                            style = MaterialTheme.typography.bodyLarge
                         )
                     }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(limits, key = { it.packageName }) { limit ->
+                            LimitCard(
+                                limit = limit,
+                                usedMinutes = ((usageMap[limit.packageName] ?: 0L) / 60_000L).toInt(),
+                                appName = resolveAppName(context.packageManager, limit.packageName),
+                                onEditLimit = { editingEntity = limit },
+                                onReset = { pendingResetEntity = limit },
+                                onDelete = { pendingDeleteEntity = limit }
+                            )
+                        }
+                    }
                 }
-            }
-            if (limits.isNotEmpty() && isLoadingUsage) {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                )
+                if (limits.isNotEmpty() && isLoadingUsage) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter)
+                    )
+                }
             }
         }
     }
@@ -365,6 +369,21 @@ private fun LimitCard(
                 else MaterialTheme.colorScheme.primary
             )
         }
+    }
+}
+
+@Composable
+private fun PauseButton(isPaused: Boolean, onToggle: () -> Unit) {
+    TextButton(
+        onClick = onToggle,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+    ) {
+        Text(
+            if (isPaused) stringResource(R.string.btn_resume_limits)
+            else stringResource(R.string.btn_pause_limits)
+        )
     }
 }
 

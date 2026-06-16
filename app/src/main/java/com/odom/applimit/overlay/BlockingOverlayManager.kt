@@ -13,8 +13,10 @@ import android.view.MotionEvent
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.graphics.drawable.toBitmap
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
@@ -51,6 +53,15 @@ class BlockingOverlayManager(private val context: Context) {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
             setPadding(64, 64, 64, 64)
+            try {
+                val icon = context.packageManager.getApplicationIcon(packageName).toBitmap()
+                addView(ImageView(context).apply {
+                    setImageBitmap(icon)
+                }, LinearLayout.LayoutParams(160, 160).apply {
+                    gravity = Gravity.CENTER_HORIZONTAL
+                    bottomMargin = 24
+                })
+            } catch (_: Exception) {}
             addView(TextView(context).apply {
                 text = appName
                 textSize = 30f

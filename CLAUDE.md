@@ -25,6 +25,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # Clean build
 ./gradlew clean assembleDebug
+
+# Install debug APK directly to connected device
+./gradlew installDebug
 ```
 
 On Windows use `gradlew.bat` instead of `./gradlew`.
@@ -33,16 +36,60 @@ On Windows use `gradlew.bat` instead of `./gradlew`.
 
 A foreground-service Android app that enforces daily per-app usage limits. The service polls `UsageStatsManager` via event replay, and draws a `WindowManager` overlay when a limit is exceeded.
 
+### Package structure
+
+```
+com.odom.applimit
+├── AppLimitApplication.kt       — AdMob init, WorkManager scheduling
+├── MainActivity.kt              — singleTop, interstitial ad host
+├── data/                        — Room: AppLimitEntity, AppLimitDao, AppLimitRepository, AppDatabase
+├── di/                          — AppModule (Hilt bindings for AppLimitRepository)
+├── notification/                — UsageNotifier (foreground notification + warning/blocked channels)
+├── overlay/                     — BlockingOverlayManager + inner BlockingLayout
+├── receiver/                    — BootReceiver (restarts UsageMonitorService on device boot)
+├── service/                     — UsageMonitorService (foreground, START_STICKY)
+├── ui/                          — Composable screens, AppLimitViewModel (Hilt)
+│   ├── NavGraph.kt
+│   ├── HomeScreen.kt
+│   ├── AddLimitScreen.kt
+│   └── PermissionSetupScreen.kt
+├── ui/theme/                    — Material3 theme, colors, typography
+└── worker/                      — DailyResetWorker (midnight, via WorkManager)
+```
+
+### Required permissions
+
+Three permissions are checked at startup by `checkAllPermissionsGranted()` (`PermissionSetupScreen.kt`):
+
+| Permission | How checked |
+|---|---|
+| `PACKAGE_USAGE_STATS` (Usage Access) | `AppOpsManager.checkOpNoThrow(OPSTR_GET_USAGE_STATS)` |
+| `SYSTEM_ALERT_WINDOW` (Draw over apps) | `Settings.canDrawOverlays(context)` |
+| `POST_NOTIFICATIONS` (Android 13+ only) | `checkSelfPermission(POST_NOTIFICATIONS)` |
+
+If any are missing, `NavGraph` routes to `PermissionSetupScreen` before `HomeScreen`.
+
+### Navigation routes
+
+```
+"permissions"  → PermissionSetupScreen (popped inclusive on grant)
+"home"         → HomeScreen
+"add_limit"    → AddLimitScreen
+```
+
 ### Data flow
 
 ```
 AppLimitApplication (startup)
-  ├─ MobileAds.initialize()          ← AdMob SDK init
-  └─ schedules DailyResetWorker via WorkManager (midnight, KEEP policy)
+  ├─ MobileAds.initialize()
+  └─ DailyResetWorker.scheduleNext() via WorkManager (ExistingWorkPolicy.REPLACE)
+
+BootReceiver
+  └─ onReceive(BOOT_COMPLETED) → startForegroundService(UsageMonitorService)
 
 UsageMonitorService (foreground, START_STICKY)
   └─ immediate monitorOnce() on every onStartCommand (no waiting for first tick)
-  └─ poll loop (screen on only):
+  └─ poll loop (screen-on only):
        → AppDatabase.getEnabledLimits()
        → getTodayUsageMs()            ← queryEvents() replay from startOfDay to now
        → effectiveMinutes = (rawMs / 60_000 - entity.usageAtResetMinutes).coerceAtLeast(0)
@@ -51,18 +98,19 @@ UsageMonitorService (foreground, START_STICKY)
        → at 100% + foreground: BlockingOverlayManager.show()
        → navigated away: BlockingOverlayManager.hide()
        → nextPollInterval(): 3s if any app ≥80% used, 10s otherwise
+       → snooze button: limitMinutes += 15, lastBlockedDate = ""  (SNOOZE_MINUTES = 15)
 
-DailyResetWorker (midnight)
-  └─ clears lastWarningDate + lastBlockedDate in Room
-  └─ self-reschedules for next midnight
+DailyResetWorker (midnight, ExistingWorkPolicy.REPLACE, self-reschedules)
+  └─ resetDailyNotificationFlags(): clears lastWarningDate + lastBlockedDate only
+     (does NOT clear usageAtResetMinutes — irrelevant after UsageStatsManager resets at midnight)
 
 BlockingOverlayManager (when limit hit)
   └─ show(): two-layer LinearLayout
-       → contentFrame (FrameLayout, weight=1) — wraps innerContent + ✕ close button (Gravity.TOP|END)
-           → innerContent (gravity=center) — app name, countdown, "Open 포커스온" button, snooze button
+       → contentFrame (FrameLayout, weight=1) — innerContent + ✕ close button (Gravity.TOP|END)
+           → innerContent — app name, countdown to midnight, "Open 포커스온" button, snooze button
        → AdView (WRAP_CONTENT) — banner ad pinned to bottom
-  └─ "Open 포커스온" button / background tap → starts MainActivity with EXTRA_FROM_BLOCKER=true
-  └─ ✕ button → closeAll(): navigate home + killBackgroundProcesses(blockedPkg) + hide overlay
+  └─ "Open 포커스온" / background tap → MainActivity with EXTRA_FROM_BLOCKER=true
+  └─ ✕ button → closeAll(): home launcher + killBackgroundProcesses(blockedPkg) + hide
 
 MainActivity (launchMode=singleTop)
   └─ onCreate / onNewIntent: if EXTRA_FROM_BLOCKER → tryShowAd()
@@ -72,29 +120,27 @@ MainActivity (launchMode=singleTop)
 ### Key design decisions
 
 - **`UsageStatsManager.queryEvents()` everywhere** — both `UsageMonitorService.getTodayUsageMs()` and `AppLimitViewModel.rawUsageMs()` replay MOVE_TO_FOREGROUND/MOVE_TO_BACKGROUND events from startOfDay to now, then add `now - lastForegroundMs` for the still-open session. `queryUsageStats()` is never used — it only commits a session after the app backgrounds, making it useless for real-time display and blocking.
-- **`usageMap` stores milliseconds, not minutes** — `AppLimitViewModel._usageMap` is `MutableStateFlow<Map<String, Long>>`. Storing minutes caused `StateFlow` to deduplicate within the same minute (structural equality), freezing the UI. Milliseconds change on every 3-second poll, bypassing deduplication. `HomeScreen` converts: `((usageMap[pkg] ?: 0L) / 60_000L).toInt()`. The `init` coroutine on `Dispatchers.IO` drives the polling — no `flatMapLatest`.
-- **Non-Hilt components**: `UsageMonitorService`, `BootReceiver`, `BlockingOverlayManager`, and `DailyResetWorker` all get dependencies manually (via `AppDatabase.getInstance(context)` companion singleton). Only the ViewModel/UI layer uses Hilt injection.
-- **Blocking overlay** uses `TYPE_APPLICATION_OVERLAY` (requires `SYSTEM_ALERT_WINDOW`). Drawn on main thread via `withContext(Dispatchers.Main)`. Window flags must be `FLAG_LAYOUT_IN_SCREEN` **only** — do not add `FLAG_NOT_FOCUSABLE` or `FLAG_NOT_TOUCH_MODAL`. The inner `BlockingLayout` class overrides `dispatchTouchEvent` (returns `true` after calling `super` so Button clicks still work) and `dispatchKeyEvent` (returns `true` always, blocking Back/volume/menu). This is the only reliable way to prevent touch leakage to the app below.
-- **Overlay ✕ button** — positioned top-right via `FrameLayout` wrapper (`Gravity.TOP or Gravity.END`). Calls `closeAll()`: navigates to home launcher, then calls `ActivityManager.killBackgroundProcesses(blockedPkg)` (requires `KILL_BACKGROUND_PROCESSES` permission in manifest), then hides the overlay. Does **not** open MainActivity — the user sees only the home screen.
-- **Overlay → 포커스온 launch** — tapping the "Open 포커스온" button or the overlay background calls `openAppLimit()` which starts `MainActivity` with `FLAG_ACTIVITY_CLEAR_TOP | FLAG_ACTIVITY_SINGLE_TOP | FLAG_ACTIVITY_NEW_TASK` and `EXTRA_FROM_BLOCKER=true`. The overlay auto-hides within the next poll cycle (≤3 s) when the service detects 포커스온 is in the foreground. `MainActivity.launchMode=singleTop` ensures `onNewIntent` is called if it's already running.
-- **AdMob** — `MobileAds.initialize()` runs in `AppLimitApplication.onCreate()`. `MainActivity` pre-loads an `InterstitialAd`; when `EXTRA_FROM_BLOCKER=true` is received it calls `tryShowAd()` which either shows the loaded ad immediately or sets `pendingShowAd=true` to show it when loading finishes. After dismiss, the next interstitial pre-loads. `BlockingOverlayManager` and `HomeScreen` each show a banner (`AdSize.BANNER`) — the overlay uses a direct `AdView` in its layout; the home screen uses `AndroidView` inside a `BannerAd()` composable set as `Scaffold.bottomBar`. `HomeScreen` also pre-loads a shared `confirmAdView` (via `remember`) shown inside the reset/delete confirmation dialogs. **All ad unit IDs in the code are Google test IDs — replace before publishing.**
-- **Reset/delete confirmation** — tapping ↺ or 🗑 in `LimitCard` sets `pendingResetEntity` / `pendingDeleteEntity` state in `HomeScreen`, which shows an `AlertDialog` containing the pre-loaded `confirmAdView` banner. A single `AdView` instance is shared between both dialogs (they cannot appear simultaneously).
-- **App picker** uses `queryIntentActivities(ACTION_MAIN + CATEGORY_LAUNCHER)` — not `getInstalledApplications()`. Pre-installed apps (YouTube, Instagram) have `FLAG_SYSTEM` set and are missed by a flag-based filter; a launcher-intent query returns exactly what appears in the app drawer. The manifest `<queries>` block declares this intent for Android 11+ visibility. `QUERY_ALL_PACKAGES` is not used (Play Store restricted).
-- **Usage reset baseline** — `AppLimitEntity.usageAtResetMinutes` stores the raw minutes (`rawUsageMs / 60_000`) at the moment the user taps ↺. Both service and ViewModel compute `effectiveMs = rawMs - (baseline * 60_000)`. `DailyResetWorker` does **not** clear `usageAtResetMinutes` — it becomes irrelevant at midnight when `UsageStatsManager` resets naturally. **DB is version 2**; `MIGRATION_1_2` adds the column via `ALTER TABLE`. Always bump the version and add a migration when changing the schema.
-- **`foregroundServiceType = specialUse`** is required for `targetSdk = 36`. The manifest must include the `android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE` property.
+
+- **`usageMap` stores milliseconds, not minutes** — `AppLimitViewModel._usageMap` is `MutableStateFlow<Map<String, Long>>`. Storing minutes caused `StateFlow` to deduplicate within the same minute (structural equality), freezing the UI. Milliseconds change on every 3-second poll, bypassing deduplication. `HomeScreen` converts: `((usageMap[pkg] ?: 0L) / 60_000L).toInt()`.
+
+- **Non-Hilt components** — `UsageMonitorService`, `BootReceiver`, `BlockingOverlayManager`, and `DailyResetWorker` get dependencies manually (via `AppDatabase.getInstance(context)` companion singleton). Only the ViewModel/UI layer uses Hilt injection.
+
+- **Blocking overlay window flags** — `TYPE_APPLICATION_OVERLAY` with `FLAG_LAYOUT_IN_SCREEN` **only**. Do not add `FLAG_NOT_FOCUSABLE` or `FLAG_NOT_TOUCH_MODAL`. The inner `BlockingLayout` overrides `dispatchTouchEvent` (calls super so Button clicks fire, then returns `true`) and `dispatchKeyEvent` (returns `true` always). This is the only reliable way to prevent touch/key leakage to the app below while keeping buttons working.
+
+- **App picker** uses `queryIntentActivities(ACTION_MAIN + CATEGORY_LAUNCHER)` — not `getInstalledApplications()`. Pre-installed apps (YouTube, Instagram) have `FLAG_SYSTEM` set and are missed by flag-based filtering; a launcher-intent query returns exactly what appears in the app drawer. The manifest `<queries>` block declares this intent for Android 11+ visibility.
+
+- **Usage reset baseline** — `AppLimitEntity.usageAtResetMinutes` stores raw minutes at the moment the user taps ↺. Both service and ViewModel compute `effectiveMs = rawMs - (baseline * 60_000)`. `DailyResetWorker` does **not** clear this field.
+
+- **DB is version 2** — `MIGRATION_1_2` adds `usageAtResetMinutes` via `ALTER TABLE`. Always bump `version` in `@Database` and add a named `Migration` object when changing the schema.
+
+- **`foregroundServiceType = specialUse`** — required for `targetSdk = 36`. The manifest must include the `android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE` property.
+
+- **AdMob ad unit IDs** — all IDs in the code reference `R.string.TEST_admob_banner_id` and `R.string.TEST_admob_interstitial_id` (Google test IDs). Replace with real unit IDs in `strings.xml` before publishing. A shared `confirmAdView` instance in `HomeScreen` is reused across the reset and delete confirmation dialogs (they cannot appear simultaneously).
 
 ### Dependency versions (libs.versions.toml)
 
-All new versions live in the version catalog. Notable pinned versions:
-- `ksp` must match `kotlin` exactly: currently both `2.0.21` / `ksp = "2.0.21-1.0.27"`. If Kotlin is upgraded, bump KSP first.
+All versions live in the version catalog. Notable constraints:
+- `ksp` must match `kotlin` exactly: currently `kotlin = "2.0.21"` / `ksp = "2.0.21-1.0.27"`. Bump KSP first when upgrading Kotlin.
 - `composeBom = "2024.09.00"` → Material3 1.3.0. `LinearProgressIndicator` uses the `progress: () -> Float` lambda API, not the deprecated `Float` param.
 - `playServicesAds = "23.3.0"` — Google Mobile Ads SDK.
 - Room and Hilt annotation processors use `ksp(...)`, not `kapt`.
-
-### Permission onboarding
-
-`NavGraph` checks all three permissions at startup via `checkAllPermissionsGranted()` (defined in `PermissionSetupScreen.kt`, package-visible). If any are missing, it routes to `PermissionSetupScreen` first.
-
-### Daily notification deduplication
-
-`AppLimitEntity` stores `lastWarningDate` and `lastBlockedDate` as `"yyyy-MM-dd"` strings. The service compares against `todayString()` before sending a notification and before updating the DB, so each notification fires at most once per calendar day. `DailyResetWorker` clears both fields at midnight.

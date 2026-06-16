@@ -1,8 +1,6 @@
 package com.odom.applimit.service
 
 import android.app.Service
-import android.app.usage.UsageEvents
-import android.app.usage.UsageStatsManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -11,6 +9,8 @@ import android.os.PowerManager
 import com.odom.applimit.data.AppDatabase
 import com.odom.applimit.notification.UsageNotifier
 import com.odom.applimit.overlay.BlockingOverlayManager
+import com.odom.applimit.util.PauseManager
+import com.odom.applimit.util.UsageStatsHelper
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +21,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -29,24 +28,25 @@ class UsageMonitorService : Service() {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var notifier: UsageNotifier
     private lateinit var overlayManager: BlockingOverlayManager
-    private lateinit var usageStatsManager: UsageStatsManager
+    private lateinit var usageStatsHelper: UsageStatsHelper
     private lateinit var powerManager: PowerManager
+    private val snoozedUntilMs = mutableMapOf<String, Long>()
+
     companion object {
-        private const val SNOOZE_MINUTES = 15
+        private const val SNOOZE_DURATION_MS = 15 * 60_000L
     }
 
     override fun onCreate() {
         super.onCreate()
         notifier = UsageNotifier(this)
         overlayManager = BlockingOverlayManager(this)
-        usageStatsManager = getSystemService(UsageStatsManager::class.java)
+        usageStatsHelper = UsageStatsHelper(this)
         powerManager = getSystemService(PowerManager::class.java)
         startForeground(UsageNotifier.NOTIFICATION_ID_SERVICE, notifier.buildServiceNotification())
         startMonitoring()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Run an immediate check so the overlay appears without waiting for the first poll cycle
         scope.launch {
             try { monitorOnce() } catch (e: CancellationException) { throw e } catch (_: Exception) {}
         }
@@ -74,8 +74,6 @@ class UsageMonitorService : Service() {
                     }
                 }
                 // Poll every 3s when any limit is near/over (≥80%), 10s otherwise.
-                // Keeps battery impact low during normal usage while tightening the
-                // blocking window to ≤3s once the user is close to their limit.
                 delay(nextPollInterval())
             }
         }
@@ -86,7 +84,7 @@ class UsageMonitorService : Service() {
         val limits = dao.getEnabledLimits()
         if (limits.isEmpty()) return 10_000L
         val nearLimit = limits.any { limit ->
-            val usedMs = getTodayUsageMs(limit.packageName) ?: 0L
+            val usedMs = usageStatsHelper.getTodayUsageMs(limit.packageName) ?: 0L
             val usedMinutes = ((usedMs / 60_000).toInt() - limit.usageAtResetMinutes).coerceAtLeast(0)
             usedMinutes.toFloat() / limit.limitMinutes >= 0.8f
         }
@@ -94,6 +92,11 @@ class UsageMonitorService : Service() {
     }
 
     private suspend fun monitorOnce() {
+        if (PauseManager.isPaused(applicationContext)) {
+            withContext(Dispatchers.Main) { overlayManager.hide() }
+            return
+        }
+
         val dao = AppDatabase.getInstance(applicationContext).appLimitDao()
         val limits = dao.getEnabledLimits()
         if (limits.isEmpty()) {
@@ -102,12 +105,10 @@ class UsageMonitorService : Service() {
         }
 
         val today = todayString()
-        val foregroundPackage = getForegroundApp()
+        val foregroundPackage = usageStatsHelper.getForegroundApp()
 
         for (limit in limits) {
-            val usedMs = getTodayUsageMs(limit.packageName) ?: continue
-            // Subtract the baseline recorded at the last reset so the service
-            // respects the same "effective usage" the UI shows.
+            val usedMs = usageStatsHelper.getTodayUsageMs(limit.packageName) ?: continue
             val usedMinutes = ((usedMs / 60_000).toInt() - limit.usageAtResetMinutes).coerceAtLeast(0)
             val limitMinutes = limit.limitMinutes
             val remainingMinutes = (limitMinutes - usedMinutes).coerceAtLeast(0)
@@ -119,20 +120,15 @@ class UsageMonitorService : Service() {
                         val appName = getAppName(limit.packageName)
                         notifier.sendBlocked(limit.packageName, appName)
                     }
-                    if (foregroundPackage == limit.packageName) {
+                    val isSnoozed = System.currentTimeMillis() < (snoozedUntilMs[limit.packageName] ?: 0L)
+                    if (!isSnoozed && foregroundPackage == limit.packageName) {
                         val appName = getAppName(limit.packageName)
-                        val capturedLimit = limit
+                        val pkg = limit.packageName
                         withContext(Dispatchers.Main) {
                             overlayManager.show(limit.packageName, appName, usedMinutes, limitMinutes) {
-                                scope.launch(Dispatchers.IO) {
-                                    dao.update(
-                                        capturedLimit.copy(
-                                            limitMinutes = capturedLimit.limitMinutes + SNOOZE_MINUTES,
-                                            lastBlockedDate = ""
-                                        )
-                                    )
-                                }
-                                // 오버레이는 MainActivity가 포그라운드로 오면 서비스 폴링이 자동 숨김
+                                // True snooze: record expiry time, no DB write.
+                                // The overlay hides when MainActivity takes focus; re-shows after 15 min.
+                                snoozedUntilMs[pkg] = System.currentTimeMillis() + SNOOZE_DURATION_MS
                             }
                         }
                     }
@@ -151,65 +147,6 @@ class UsageMonitorService : Service() {
         if (overlayManager.isShowing() && overlayManager.currentPackage != foregroundPackage) {
             withContext(Dispatchers.Main) { overlayManager.hide() }
         }
-    }
-
-    // Returns today's foreground ms via event replay so the current session is
-    // included in real-time (queryUsageStats only commits after app backgrounds).
-    private fun getTodayUsageMs(packageName: String): Long? {
-        val startOfDay = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-        val now = System.currentTimeMillis()
-        return try {
-            val events = usageStatsManager.queryEvents(startOfDay, now)
-            val event = UsageEvents.Event()
-            var totalMs = 0L
-            var lastForegroundMs = -1L
-            while (events.hasNextEvent()) {
-                events.getNextEvent(event)
-                if (event.packageName != packageName) continue
-                when (event.eventType) {
-                    UsageEvents.Event.MOVE_TO_FOREGROUND,
-                    UsageEvents.Event.ACTIVITY_RESUMED ->
-                        lastForegroundMs = event.timeStamp
-                    UsageEvents.Event.MOVE_TO_BACKGROUND,
-                    UsageEvents.Event.ACTIVITY_PAUSED -> {
-                        if (lastForegroundMs >= 0) {
-                            totalMs += event.timeStamp - lastForegroundMs
-                            lastForegroundMs = -1L
-                        }
-                    }
-                }
-            }
-            if (lastForegroundMs >= 0) totalMs += now - lastForegroundMs
-            totalMs
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    private fun getForegroundApp(): String? {
-        val now = System.currentTimeMillis()
-        // Use a 10-minute window so we detect apps that moved to foreground before the last poll.
-        // We track foreground/background transitions to determine the current top app.
-        val events = usageStatsManager.queryEvents(now - 600_000L, now)
-        val event = UsageEvents.Event()
-        var currentForeground: String? = null
-        while (events.hasNextEvent()) {
-            events.getNextEvent(event)
-            when (event.eventType) {
-                UsageEvents.Event.MOVE_TO_FOREGROUND,
-                UsageEvents.Event.ACTIVITY_RESUMED ->
-                    currentForeground = event.packageName
-                UsageEvents.Event.MOVE_TO_BACKGROUND,
-                UsageEvents.Event.ACTIVITY_PAUSED ->
-                    if (currentForeground == event.packageName) currentForeground = null
-            }
-        }
-        return currentForeground
     }
 
     private fun getAppName(packageName: String): String {
