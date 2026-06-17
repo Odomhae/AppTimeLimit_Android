@@ -100,7 +100,7 @@ fun HomeScreen(
 
     val confirmAdView = remember {
         AdView(context).apply {
-            setAdSize(AdSize.BANNER)
+            setAdSize(AdSize.MEDIUM_RECTANGLE)
             adUnitId = context.getString(R.string.TEST_admob_banner_id)
             loadAd(AdRequest.Builder().build())
         }
