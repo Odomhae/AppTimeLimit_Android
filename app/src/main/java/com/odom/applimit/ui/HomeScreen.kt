@@ -67,8 +67,8 @@ import com.odom.applimit.service.UsageMonitorService
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Switch
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import androidx.compose.material3.pulltorefresh.pullToRefresh
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,6 +88,8 @@ fun HomeScreen(
     var showExitDialog by remember { mutableStateOf(false) }
     var pendingResetEntity by remember { mutableStateOf<AppLimitEntity?>(null) }
     var pendingDeleteEntity by remember { mutableStateOf<AppLimitEntity?>(null) }
+
+    val pullRefreshState = rememberPullToRefreshState()
 
     val exitAdView = remember {
         AdView(context).apply {
@@ -212,10 +214,14 @@ fun HomeScreen(
         )
     }
 
-    SwipeRefresh(
-        state = rememberSwipeRefreshState(isLoadingUsage),
-        onRefresh = { viewModel.refreshUsageNow() },
-        modifier = Modifier.fillMaxSize()
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pullToRefresh(
+                state = pullRefreshState,
+                isRefreshing = isLoadingUsage,
+                onRefresh = { viewModel.refreshUsageNow() }
+            )
     ) {
         Scaffold(
             topBar = { TopAppBar(title = { Text(stringResource(R.string.home_title)) }) },
