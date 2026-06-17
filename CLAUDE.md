@@ -109,9 +109,9 @@ DailyResetWorker (midnight, ExistingWorkPolicy.REPLACE, self-reschedules)
 BlockingOverlayManager (when limit hit)
   └─ show(): two-layer LinearLayout
        → contentFrame (FrameLayout, weight=1) — innerContent + ✕ close button (Gravity.TOP|END)
-           → innerContent — app name, countdown to midnight, "Open 포커스온" button, snooze button
+           → innerContent — app name, countdown to midnight, "Open ShutApp" button (R.string.overlay_open_app), snooze button
        → AdView (WRAP_CONTENT) — banner ad pinned to bottom
-  └─ "Open 포커스온" / background tap → MainActivity with EXTRA_FROM_BLOCKER=true
+  └─ "Open ShutApp" / background tap → MainActivity with EXTRA_FROM_BLOCKER=true
   └─ ✕ button → closeAll(): home launcher + killBackgroundProcesses(blockedPkg) + hide
 
 MainActivity (launchMode=singleTop)
@@ -125,9 +125,13 @@ MainActivity (launchMode=singleTop)
 
 - **`PauseManager` pauses everything until next Monday midnight** — stored in SharedPreferences (`app_limit_prefs` / `paused_until_ms`). `monitorOnce()` checks `PauseManager.isPaused()` as the very first step and hides the overlay + returns early. Used for weekend/vacation exemptions.
 
-- **`UsageStatsManager.queryEvents()` everywhere** — both `UsageStatsHelper.getTodayUsageMs()` and `AppLimitViewModel.rawUsageMs()` replay MOVE_TO_FOREGROUND/MOVE_TO_BACKGROUND events from startOfDay to now, then add `now - lastForegroundMs` for the still-open session. `queryUsageStats()` is never used — it only commits a session after the app backgrounds, making it useless for real-time display and blocking.
+- **`UsageStatsManager.queryEvents()` everywhere** — `UsageStatsHelper.getTodayUsageMs()` replays MOVE_TO_FOREGROUND/MOVE_TO_BACKGROUND events from startOfDay to now, then adds `now - lastForegroundMs` for the still-open session. `AppLimitViewModel.effectiveUsageMs()` calls `getTodayUsageMs()` and subtracts the `usageAtResetMinutes` baseline. `queryUsageStats()` is never used — it only commits a session after the app backgrounds, making it useless for real-time display and blocking.
 
 - **`usageMap` stores milliseconds, not minutes** — `AppLimitViewModel._usageMap` is `MutableStateFlow<Map<String, Long>>`. Storing minutes caused `StateFlow` to deduplicate within the same minute (structural equality), freezing the UI. Milliseconds change on every 3-second poll, bypassing deduplication. `HomeScreen` converts: `((usageMap[pkg] ?: 0L) / 60_000L).toInt()`.
+
+- **UI usage polling is separate from the service** — `AppLimitViewModel.init` runs its own `viewModelScope` loop (3s `delay`) that recomputes `_usageMap` from `UsageStatsHelper.getTodayUsageMs()` and refreshes `_isPaused`. This is display-only and independent of `UsageMonitorService`'s blocking loop. `effectiveUsageMs()` applies the `usageAtResetMinutes` baseline.
+
+- **Pull-to-refresh & background resume** — `HomeScreen` wraps content in Material3 `Modifier.pullToRefresh(...)` (`rememberPullToRefreshState`) driven by `viewModel.isLoadingUsage` / `viewModel.refreshUsageNow()`. `_isLoadingUsage` starts `true` (shows `LinearProgressIndicator`) and flips `false` after the first poll populates `_usageMap`. `MainActivity.onResume()` calls `refreshUsageNow()` so returning from background re-queries usage immediately instead of waiting for the next 3s tick. Requires `@OptIn(ExperimentalMaterial3Api::class)` and `composeBom` ≥ the pull-to-refresh API.
 
 - **Non-Hilt components** — `UsageMonitorService`, `BootReceiver`, `BlockingOverlayManager`, and `DailyResetWorker` get dependencies manually (via `AppDatabase.getInstance(context)` companion singleton). Only the ViewModel/UI layer uses Hilt injection.
 
@@ -137,9 +141,11 @@ MainActivity (launchMode=singleTop)
 
 - **Usage reset baseline** — `AppLimitEntity.usageAtResetMinutes` stores raw minutes at the moment the user taps ↺. Both service and ViewModel compute `effectiveMs = rawMs - (baseline * 60_000)`. `DailyResetWorker` does **not** clear this field.
 
-- **DB is version 2** — `MIGRATION_1_2` adds `usageAtResetMinutes` via `ALTER TABLE`. Always bump `version` in `@Database` and add a named `Migration` object when changing the schema.
+- **DB is version 3** — `MIGRATION_1_2` adds `usageAtResetMinutes`, `MIGRATION_2_3` adds `snoozedMinutes`, each via `ALTER TABLE ... ADD COLUMN ... NOT NULL DEFAULT 0`. Both are registered in `AppDatabase.getInstance()` via `addMigrations(...)`. Always bump `version` in `@Database` and add a named `Migration` object when changing the schema.
 
 - **`foregroundServiceType = specialUse`** — required for `targetSdk = 36`. The manifest must include the `android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE` property.
+
+- **App display name is localized "ShutApp" / "셧앱"** — `app_name` (and all user-facing copy) is `ShutApp` in `values/strings.xml` and `셧앱` in `values-ko/strings.xml`. The package name (`com.odom.applimit`) and internal identifiers (`Theme.AppLimit`, `AppLimitTheme`, `AppLimitViewModel`, etc.) are intentionally left unchanged — they are not user-visible. The blocking-overlay open button reads `R.string.overlay_open_app`, not a hardcoded string.
 
 - **AdMob ad unit IDs** — all IDs in the code reference `R.string.TEST_admob_banner_id` and `R.string.TEST_admob_interstitial_id` (Google test IDs). Replace with real unit IDs in `strings.xml` before publishing. A shared `confirmAdView` instance in `HomeScreen` is reused across the reset and delete confirmation dialogs (they cannot appear simultaneously).
 

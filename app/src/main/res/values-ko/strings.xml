@@ -1,15 +1,15 @@
 <resources>
-    <string name="app_name">appLimit</string>
+    <string name="app_name">셧앱</string>
 
     <!-- Blocking overlay -->
     <string name="overlay_limit_reached">오늘의 사용 한도에 도달했습니다</string>
     <string name="overlay_usage_stats">오늘 %1$d / %2$d 분 사용</string>
     <string name="overlay_resets_in">%1$s 후 초기화</string>
-    <string name="overlay_hint_edit">App Limit에서 한도를 수정하거나 초기화할 수 있습니다</string>
-    <string name="overlay_open_app">App Limit 열기</string>
+    <string name="overlay_hint_edit">셧앱에서 한도를 수정하거나 초기화할 수 있습니다</string>
+    <string name="overlay_open_app">셧앱 열기</string>
 
     <!-- Home screen -->
-    <string name="home_title">App Limit</string>
+    <string name="home_title">셧앱</string>
     <string name="home_empty">설정된 제한이 없습니다.\n+ 버튼을 눌러 첫 번째 앱 제한을 추가하세요.</string>
     <string name="cd_add_limit">제한 추가</string>
     <string name="cd_edit_limit">제한 편집</string>
@@ -51,11 +51,11 @@
     <string name="notif_warning_text">오늘 %1$d분 남았습니다</string>
     <string name="notif_blocked_title">%1$s – 하루 한도에 도달했습니다</string>
     <string name="notif_blocked_text">%1$s의 하루 사용량을 모두 소진했습니다</string>
-    <string name="notif_service_title">App Limit 모니터</string>
+    <string name="notif_service_title">셧앱 모니터</string>
     <string name="notif_service_text">백그라운드에서 앱 사용량을 모니터링 중</string>
 
     <!-- Exit confirmation dialog -->
-    <string name="exit_dialog_title">App Limit을 종료하시겠습니까?</string>
+    <string name="exit_dialog_title">셧앱을 종료하시겠습니까?</string>
     <string name="exit_dialog_message">사용량 모니터는 백그라운드에서 계속 실행됩니다.</string>
     <string name="exit_dialog_confirm">종료</string>
 
@@ -82,7 +82,7 @@
 
     <!-- Permission setup screen -->
     <string name="perm_title">설정 필요</string>
-    <string name="perm_body">App Limit은 앱을 모니터링하고 차단하기 위해 다음 권한이 필요합니다.</string>
+    <string name="perm_body">셧앱은 앱을 모니터링하고 차단하기 위해 다음 권한이 필요합니다.</string>
     <string name="perm_usage_title">사용 기록 접근</string>
     <string name="perm_usage_desc">각 앱의 하루 사용 시간을 추적합니다</string>
     <string name="perm_overlay_title">다른 앱 위에 그리기</string>

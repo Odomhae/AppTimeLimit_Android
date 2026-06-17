@@ -1,15 +1,15 @@
 <resources>
-    <string name="app_name">appLimit</string>
+    <string name="app_name">ShutApp</string>
 
     <!-- Blocking overlay -->
     <string name="overlay_limit_reached">Daily limit reached</string>
     <string name="overlay_usage_stats">%1$d / %2$d minutes used today</string>
     <string name="overlay_resets_in">Resets in %1$s</string>
-    <string name="overlay_hint_edit">You can edit or reset your limit in App Limit</string>
-    <string name="overlay_open_app">Open App Limit</string>
+    <string name="overlay_hint_edit">You can edit or reset your limit in ShutApp</string>
+    <string name="overlay_open_app">Open ShutApp</string>
 
     <!-- Home screen -->
-    <string name="home_title">App Limit</string>
+    <string name="home_title">ShutApp</string>
     <string name="home_empty">No limits set yet.\nTap + to add your first app limit.</string>
     <string name="cd_add_limit">Add limit</string>
     <string name="cd_edit_limit">Edit limit</string>
@@ -51,11 +51,11 @@
     <string name="notif_warning_text">%1$d minute(s) remaining today</string>
     <string name="notif_blocked_title">%1$s – Daily limit reached</string>
     <string name="notif_blocked_text">You\'ve used your daily allowance for %1$s</string>
-    <string name="notif_service_title">App Limit Monitor</string>
+    <string name="notif_service_title">ShutApp Monitor</string>
     <string name="notif_service_text">Monitoring app usage in the background</string>
 
     <!-- Exit confirmation dialog -->
-    <string name="exit_dialog_title">Exit App Limit?</string>
+    <string name="exit_dialog_title">Exit ShutApp?</string>
     <string name="exit_dialog_message">The usage monitor will continue running in the background.</string>
     <string name="exit_dialog_confirm">Exit</string>
 
@@ -88,7 +88,7 @@
 
     <!-- Permission setup screen -->
     <string name="perm_title">Setup Required</string>
-    <string name="perm_body">App Limit needs the following permissions to monitor and block apps.</string>
+    <string name="perm_body">ShutApp needs the following permissions to monitor and block apps.</string>
     <string name="perm_usage_title">Usage Access</string>
     <string name="perm_usage_desc">Tracks how long each app is used per day</string>
     <string name="perm_overlay_title">Draw Over Other Apps</string>
