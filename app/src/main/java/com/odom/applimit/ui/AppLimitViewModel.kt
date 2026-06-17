@@ -85,7 +85,8 @@ class AppLimitViewModel @Inject constructor(
                 entity.copy(
                     usageAtResetMinutes = baselineMinutes,
                     lastWarningDate = "",
-                    lastBlockedDate = ""
+                    lastBlockedDate = "",
+                    snoozedMinutes = 0
                 )
             )
         }

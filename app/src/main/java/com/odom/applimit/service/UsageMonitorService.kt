@@ -30,10 +30,9 @@ class UsageMonitorService : Service() {
     private lateinit var overlayManager: BlockingOverlayManager
     private lateinit var usageStatsHelper: UsageStatsHelper
     private lateinit var powerManager: PowerManager
-    private val snoozedUntilMs = mutableMapOf<String, Long>()
 
     companion object {
-        private const val SNOOZE_DURATION_MS = 15 * 60_000L
+        private const val SNOOZE_MINUTES = 15
     }
 
     override fun onCreate() {
@@ -86,7 +85,8 @@ class UsageMonitorService : Service() {
         val nearLimit = limits.any { limit ->
             val usedMs = usageStatsHelper.getTodayUsageMs(limit.packageName) ?: 0L
             val usedMinutes = ((usedMs / 60_000).toInt() - limit.usageAtResetMinutes).coerceAtLeast(0)
-            usedMinutes.toFloat() / limit.limitMinutes >= 0.8f
+            val effectiveLimit = limit.limitMinutes + limit.snoozedMinutes
+            usedMinutes.toFloat() / effectiveLimit >= 0.8f
         }
         return if (nearLimit) 3_000L else 10_000L
     }
@@ -110,30 +110,30 @@ class UsageMonitorService : Service() {
         for (limit in limits) {
             val usedMs = usageStatsHelper.getTodayUsageMs(limit.packageName) ?: continue
             val usedMinutes = ((usedMs / 60_000).toInt() - limit.usageAtResetMinutes).coerceAtLeast(0)
-            val limitMinutes = limit.limitMinutes
-            val remainingMinutes = (limitMinutes - usedMinutes).coerceAtLeast(0)
+            val effectiveLimit = limit.limitMinutes + limit.snoozedMinutes
+            val remainingMinutes = (effectiveLimit - usedMinutes).coerceAtLeast(0)
 
             when {
-                usedMinutes >= limitMinutes -> {
+                usedMinutes >= effectiveLimit -> {
                     if (limit.lastBlockedDate != today) {
                         dao.update(limit.copy(lastBlockedDate = today))
                         val appName = getAppName(limit.packageName)
                         notifier.sendBlocked(limit.packageName, appName)
                     }
-                    val isSnoozed = System.currentTimeMillis() < (snoozedUntilMs[limit.packageName] ?: 0L)
-                    if (!isSnoozed && foregroundPackage == limit.packageName) {
+                    if (foregroundPackage == limit.packageName) {
                         val appName = getAppName(limit.packageName)
-                        val pkg = limit.packageName
                         withContext(Dispatchers.Main) {
-                            overlayManager.show(limit.packageName, appName, usedMinutes, limitMinutes) {
-                                // True snooze: record expiry time, no DB write.
-                                // The overlay hides when MainActivity takes focus; re-shows after 15 min.
-                                snoozedUntilMs[pkg] = System.currentTimeMillis() + SNOOZE_DURATION_MS
+                            overlayManager.show(limit.packageName, appName, usedMinutes, effectiveLimit) {
+                                // Snooze: add 15 minutes to limit, persist to DB.
+                                scope.launch(Dispatchers.IO) {
+                                    val snoozed = limit.copy(snoozedMinutes = limit.snoozedMinutes + SNOOZE_MINUTES)
+                                    dao.update(snoozed)
+                                }
                             }
                         }
                     }
                 }
-                usedMinutes.toFloat() / limitMinutes >= 0.8f -> {
+                usedMinutes.toFloat() / effectiveLimit >= 0.8f -> {
                     if (limit.lastWarningDate != today) {
                         dao.update(limit.copy(lastWarningDate = today))
                         val appName = getAppName(limit.packageName)

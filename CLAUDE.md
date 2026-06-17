@@ -54,6 +54,7 @@ com.odom.applimit
 │   ├── AddLimitScreen.kt
 │   └── PermissionSetupScreen.kt
 ├── ui/theme/                    — Material3 theme, colors, typography
+├── util/                        — UsageStatsHelper (queryEvents wrapper), PauseManager (SharedPrefs)
 └── worker/                      — DailyResetWorker (midnight, via WorkManager)
 ```
 
@@ -90,15 +91,16 @@ BootReceiver
 UsageMonitorService (foreground, START_STICKY)
   └─ immediate monitorOnce() on every onStartCommand (no waiting for first tick)
   └─ poll loop (screen-on only):
+       → PauseManager.isPaused()      ← if true, hide overlay and skip everything
        → AppDatabase.getEnabledLimits()
-       → getTodayUsageMs()            ← queryEvents() replay from startOfDay to now
+       → UsageStatsHelper.getTodayUsageMs()   ← queryEvents() replay from startOfDay to now
        → effectiveMinutes = (rawMs / 60_000 - entity.usageAtResetMinutes).coerceAtLeast(0)
-       → getForegroundApp()           ← queryEvents() 10-min window state machine
+       → UsageStatsHelper.getForegroundApp()  ← queryEvents() 10-min window state machine
        → at 80%: UsageNotifier.sendWarning()  (once per day via lastWarningDate)
        → at 100% + foreground: BlockingOverlayManager.show()
        → navigated away: BlockingOverlayManager.hide()
-       → nextPollInterval(): 3s if any app ≥80% used, 10s otherwise
-       → snooze button: limitMinutes += 15, lastBlockedDate = ""  (SNOOZE_MINUTES = 15)
+       → nextPollInterval(): 3s if any app ≥80% used (against effectiveLimit), 10s otherwise
+       → snooze button: DB update snoozedMinutes += 15 min  (persisted)
 
 DailyResetWorker (midnight, ExistingWorkPolicy.REPLACE, self-reschedules)
   └─ resetDailyNotificationFlags(): clears lastWarningDate + lastBlockedDate only
@@ -119,7 +121,11 @@ MainActivity (launchMode=singleTop)
 
 ### Key design decisions
 
-- **`UsageStatsManager.queryEvents()` everywhere** — both `UsageMonitorService.getTodayUsageMs()` and `AppLimitViewModel.rawUsageMs()` replay MOVE_TO_FOREGROUND/MOVE_TO_BACKGROUND events from startOfDay to now, then add `now - lastForegroundMs` for the still-open session. `queryUsageStats()` is never used — it only commits a session after the app backgrounds, making it useless for real-time display and blocking.
+- **Snooze adds 15 minutes to the limit** — `AppLimitEntity.snoozedMinutes` stores extra minutes. Snoozing updates `snoozedMinutes += 15` in DB. `nextPollInterval()` and `monitorOnce()` use `effectiveLimit = limitMinutes + snoozedMinutes` for all calculations. `DailyResetWorker` clears `snoozedMinutes = 0` at midnight alongside `lastWarningDate` / `lastBlockedDate`.
+
+- **`PauseManager` pauses everything until next Monday midnight** — stored in SharedPreferences (`app_limit_prefs` / `paused_until_ms`). `monitorOnce()` checks `PauseManager.isPaused()` as the very first step and hides the overlay + returns early. Used for weekend/vacation exemptions.
+
+- **`UsageStatsManager.queryEvents()` everywhere** — both `UsageStatsHelper.getTodayUsageMs()` and `AppLimitViewModel.rawUsageMs()` replay MOVE_TO_FOREGROUND/MOVE_TO_BACKGROUND events from startOfDay to now, then add `now - lastForegroundMs` for the still-open session. `queryUsageStats()` is never used — it only commits a session after the app backgrounds, making it useless for real-time display and blocking.
 
 - **`usageMap` stores milliseconds, not minutes** — `AppLimitViewModel._usageMap` is `MutableStateFlow<Map<String, Long>>`. Storing minutes caused `StateFlow` to deduplicate within the same minute (structural equality), freezing the UI. Milliseconds change on every 3-second poll, bypassing deduplication. `HomeScreen` converts: `((usageMap[pkg] ?: 0L) / 60_000L).toInt()`.
 

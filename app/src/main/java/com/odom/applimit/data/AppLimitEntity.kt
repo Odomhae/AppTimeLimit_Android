@@ -12,5 +12,7 @@ data class AppLimitEntity(
     val lastBlockedDate: String = "",
     // Minutes already used when the user last hit "Reset".
     // Effective usage = currentUsage - usageAtResetMinutes.
-    val usageAtResetMinutes: Int = 0
+    val usageAtResetMinutes: Int = 0,
+    // Minutes added via snooze button; resets to 0 daily at midnight.
+    val snoozedMinutes: Int = 0
 )

@@ -65,6 +65,8 @@ import com.odom.applimit.R
 import com.odom.applimit.data.AppLimitEntity
 import com.odom.applimit.service.UsageMonitorService
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Switch
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -374,15 +376,20 @@ private fun LimitCard(
 
 @Composable
 private fun PauseButton(isPaused: Boolean, onToggle: () -> Unit) {
-    TextButton(
-        onClick = onToggle,
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            if (isPaused) stringResource(R.string.btn_resume_limits)
-            else stringResource(R.string.btn_pause_limits)
+            stringResource(R.string.btn_pause_limits_ko),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        Switch(
+            checked = isPaused,
+            onCheckedChange = { onToggle() }
         )
     }
 }

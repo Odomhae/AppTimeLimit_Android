@@ -65,6 +65,8 @@
     <!-- Global pause -->
     <string name="btn_pause_limits">Pause limits for the weekend</string>
     <string name="btn_resume_limits">Resume limits</string>
+    <string name="btn_pause_limits_ko">주말 동안 제한 일시정지</string>
+    <string name="btn_resume_limits_ko">제한 재개</string>
 
     <!-- Overlay: exit blocked app to home -->
     <string name="overlay_exit_app">Exit App</string>

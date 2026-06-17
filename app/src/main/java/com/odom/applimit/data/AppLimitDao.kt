@@ -28,6 +28,6 @@ interface AppLimitDao {
     @Update
     suspend fun update(limit: AppLimitEntity)
 
-    @Query("UPDATE app_limits SET lastWarningDate = '', lastBlockedDate = ''")
+    @Query("UPDATE app_limits SET lastWarningDate = '', lastBlockedDate = '', snoozedMinutes = 0")
     suspend fun resetDailyNotificationFlags()
 }
