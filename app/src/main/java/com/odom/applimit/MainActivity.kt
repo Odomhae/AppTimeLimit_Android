@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
@@ -13,6 +14,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.odom.applimit.R
 import com.odom.applimit.ui.AppNavGraph
+import com.odom.applimit.ui.AppLimitViewModel
 import com.odom.applimit.ui.theme.AppLimitTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -21,6 +23,7 @@ class MainActivity : ComponentActivity() {
 
     private var interstitialAd: InterstitialAd? = null
     private var pendingShowAd = false
+    private val viewModel: AppLimitViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +41,11 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleBlockerIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.refreshUsageNow()
     }
 
     private fun handleBlockerIntent(intent: Intent?) {

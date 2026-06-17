@@ -1,0 +1,219 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1781567625023,
+  "projectRoot": "C:\\Users\\User\\AndroidStudioProjects\\appLimit",
+  "techStack": {
+    "languages": [
+      {
+        "name": "Kotlin",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "build.gradle.kts"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "gradle",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "app"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "app": {
+      "path": "app",
+      "purpose": "Application code",
+      "fileCount": 4,
+      "lastAccessed": 1781567624735,
+      "keyFiles": [
+        "AGENTS.md",
+        "build.gradle.kts",
+        "proguard-rules.pro"
+      ]
+    },
+    "gradle": {
+      "path": "gradle",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1781567624764,
+      "keyFiles": [
+        "AGENTS.md",
+        "libs.versions.toml"
+      ]
+    },
+    "app\\build": {
+      "path": "app\\build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1781567624806,
+      "keyFiles": []
+    },
+    "app\\src": {
+      "path": "app\\src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1781567624809,
+      "keyFiles": [
+        "AGENTS.md"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\ui\\HomeScreen.kt",
+      "accessCount": 23,
+      "lastAccessed": 1781674196356,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\service\\UsageMonitorService.kt",
+      "accessCount": 10,
+      "lastAccessed": 1781657475202,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 8,
+      "lastAccessed": 1781656290134,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\ui\\AppLimitViewModel.kt",
+      "accessCount": 7,
+      "lastAccessed": 1781674140797,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\MainActivity.kt",
+      "accessCount": 6,
+      "lastAccessed": 1781674237354,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 4,
+      "lastAccessed": 1781569031490,
+      "type": "directory"
+    },
+    {
+      "path": "app\\src\\main\\res\\values\\strings.xml",
+      "accessCount": 4,
+      "lastAccessed": 1781656165149,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\data\\AppLimitEntity.kt",
+      "accessCount": 3,
+      "lastAccessed": 1781656186017,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\data\\AppDatabase.kt",
+      "accessCount": 3,
+      "lastAccessed": 1781656198526,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\data\\AppLimitDao.kt",
+      "accessCount": 3,
+      "lastAccessed": 1781656270347,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\notification\\UsageNotifier.kt",
+      "accessCount": 2,
+      "lastAccessed": 1781573728945,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\util\\UsageStatsHelper.kt",
+      "accessCount": 2,
+      "lastAccessed": 1781654040646,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\util\\PauseManager.kt",
+      "accessCount": 2,
+      "lastAccessed": 1781654041471,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\worker\\DailyResetWorker.kt",
+      "accessCount": 2,
+      "lastAccessed": 1781656255103,
+      "type": "file"
+    },
+    {
+      "path": "gradle\\libs.versions.toml",
+      "accessCount": 2,
+      "lastAccessed": 1781674109647,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\ui\\NavGraph.kt",
+      "accessCount": 1,
+      "lastAccessed": 1781567693269,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\ui\\PermissionSetupScreen.kt",
+      "accessCount": 1,
+      "lastAccessed": 1781567713700,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\ui\\AddLimitScreen.kt",
+      "accessCount": 1,
+      "lastAccessed": 1781567714940,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\overlay\\BlockingOverlayManager.kt",
+      "accessCount": 1,
+      "lastAccessed": 1781573901108,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\java\\com\\odom\\applimit",
+      "accessCount": 1,
+      "lastAccessed": 1781654031832,
+      "type": "directory"
+    },
+    {
+      "path": "docs\\superpowers\\specs\\2026-06-17-pull-to-refresh-design.md",
+      "accessCount": 1,
+      "lastAccessed": 1781670581856,
+      "type": "file"
+    },
+    {
+      "path": "docs\\superpowers\\plans\\2026-06-17-pull-to-refresh.md",
+      "accessCount": 1,
+      "lastAccessed": 1781673043031,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

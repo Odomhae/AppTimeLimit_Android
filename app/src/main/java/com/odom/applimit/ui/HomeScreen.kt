@@ -67,6 +67,8 @@ import com.odom.applimit.service.UsageMonitorService
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Switch
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -210,52 +212,58 @@ fun HomeScreen(
         )
     }
 
-    Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.home_title)) }) },
-        bottomBar = { BannerAd() },
-        floatingActionButton = {
-            FloatingActionButton(onClick = onAddLimit) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_add_limit))
+    SwipeRefresh(
+        state = rememberSwipeRefreshState(isLoadingUsage),
+        onRefresh = { viewModel.refreshUsageNow() },
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Scaffold(
+            topBar = { TopAppBar(title = { Text(stringResource(R.string.home_title)) }) },
+            bottomBar = { BannerAd() },
+            floatingActionButton = {
+                FloatingActionButton(onClick = onAddLimit) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_add_limit))
+                }
             }
-        }
-    ) { paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            PauseButton(isPaused = isPaused, onToggle = { viewModel.togglePause() })
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                if (limits.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            stringResource(R.string.home_empty),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(limits, key = { it.packageName }) { limit ->
-                            LimitCard(
-                                limit = limit,
-                                usedMinutes = ((usageMap[limit.packageName] ?: 0L) / 60_000L).toInt(),
-                                appName = resolveAppName(context.packageManager, limit.packageName),
-                                onEditLimit = { editingEntity = limit },
-                                onReset = { pendingResetEntity = limit },
-                                onDelete = { pendingDeleteEntity = limit }
+        ) { paddingValues ->
+            Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+                PauseButton(isPaused = isPaused, onToggle = { viewModel.togglePause() })
+                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    if (limits.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                stringResource(R.string.home_empty),
+                                style = MaterialTheme.typography.bodyLarge
                             )
                         }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(limits, key = { it.packageName }) { limit ->
+                                LimitCard(
+                                    limit = limit,
+                                    usedMinutes = ((usageMap[limit.packageName] ?: 0L) / 60_000L).toInt(),
+                                    appName = resolveAppName(context.packageManager, limit.packageName),
+                                    onEditLimit = { editingEntity = limit },
+                                    onReset = { pendingResetEntity = limit },
+                                    onDelete = { pendingDeleteEntity = limit }
+                                )
+                            }
+                        }
                     }
-                }
-                if (limits.isNotEmpty() && isLoadingUsage) {
-                    LinearProgressIndicator(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.TopCenter)
-                    )
+                    if (limits.isNotEmpty() && isLoadingUsage) {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                        )
+                    }
                 }
             }
         }

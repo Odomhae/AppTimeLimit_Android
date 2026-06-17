@@ -62,6 +62,23 @@ class AppLimitViewModel @Inject constructor(
         }
     }
 
+    fun refreshUsageNow() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isLoadingUsage.value = true
+            try {
+                val currentLimits = limits.value
+                if (currentLimits.isNotEmpty()) {
+                    _usageMap.value = currentLimits.associate { entity ->
+                        entity.packageName to effectiveUsageMs(entity)
+                    }
+                }
+                _isPaused.value = PauseManager.isPaused(context)
+            } finally {
+                _isLoadingUsage.value = false
+            }
+        }
+    }
+
     fun effectiveUsageMs(entity: AppLimitEntity): Long =
         ((usageStatsHelper.getTodayUsageMs(entity.packageName) ?: 0L) - entity.usageAtResetMinutes * 60_000L)
             .coerceAtLeast(0L)
