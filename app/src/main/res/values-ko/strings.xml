@@ -4,8 +4,7 @@
     <!-- Blocking overlay -->
     <string name="overlay_limit_reached">오늘의 사용 한도에 도달했습니다</string>
     <string name="overlay_usage_stats">오늘 %1$d / %2$d 분 사용</string>
-    <string name="overlay_resets_in">%1$s 후 초기화</string>
-    <string name="overlay_hint_edit">셧앱에서 한도를 수정하거나 초기화할 수 있습니다</string>
+    <string name="overlay_resets_subtitle">후 자정에 초기화</string>
     <string name="overlay_open_app">셧앱 열기</string>
 
     <!-- Home screen -->

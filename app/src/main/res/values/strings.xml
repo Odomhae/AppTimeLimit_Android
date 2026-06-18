@@ -4,8 +4,7 @@
     <!-- Blocking overlay -->
     <string name="overlay_limit_reached">Daily limit reached</string>
     <string name="overlay_usage_stats">%1$d / %2$d minutes used today</string>
-    <string name="overlay_resets_in">Resets in %1$s</string>
-    <string name="overlay_hint_edit">You can edit or reset your limit in ShutApp</string>
+    <string name="overlay_resets_subtitle">until midnight reset</string>
     <string name="overlay_open_app">Open ShutApp</string>
 
     <!-- Home screen -->

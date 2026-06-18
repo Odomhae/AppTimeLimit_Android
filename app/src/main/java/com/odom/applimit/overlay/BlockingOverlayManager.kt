@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.drawable.GradientDrawable
 import android.os.CountDownTimer
 import android.provider.Settings
 import android.view.Gravity
@@ -83,21 +84,27 @@ class BlockingOverlayManager(private val context: Context) {
                 setPadding(0, 0, 0, 32)
             })
             val countdownView = TextView(context).apply {
-                textSize = 18f
+                textSize = 48f
                 setTextColor(Color.WHITE)
                 gravity = Gravity.CENTER
-                setPadding(0, 0, 0, 8)
+                setPadding(0, 0, 0, 4)
             }
             addView(countdownView)
             addView(TextView(context).apply {
-                text = context.getString(R.string.overlay_hint_edit)
+                text = context.getString(R.string.overlay_resets_subtitle)
                 textSize = 14f
                 setTextColor(Color.argb(180, 200, 200, 200))
                 gravity = Gravity.CENTER
-                setPadding(0, 0, 0, 32)
+                setPadding(0, 0, 0, 140)
             })
             addView(Button(context).apply {
                 text = context.getString(R.string.overlay_open_app)
+                background = GradientDrawable(
+                    GradientDrawable.Orientation.LEFT_RIGHT,
+                    intArrayOf(Color.rgb(255, 75, 75), Color.rgb(255, 120, 90))
+                ).apply { cornerRadius = 40f }
+                stateListAnimator = null
+                setTextColor(Color.WHITE)
                 setOnClickListener { openAppLimit() }
             })
             addView(Button(context).apply {
@@ -116,13 +123,10 @@ class BlockingOverlayManager(private val context: Context) {
                     val h = millisUntilFinished / 3_600_000
                     val m = (millisUntilFinished % 3_600_000) / 60_000
                     val s = (millisUntilFinished % 60_000) / 1_000
-                    countdownView.text = context.getString(
-                        R.string.overlay_resets_in,
-                        String.format("%02d:%02d:%02d", h, m, s)
-                    )
+                    countdownView.text = String.format("%02d:%02d:%02d", h, m, s)
                 }
                 override fun onFinish() {
-                    countdownView.text = context.getString(R.string.overlay_resets_in, "00:00:00")
+                    countdownView.text = "00:00:00"
                 }
             }.start()
         }

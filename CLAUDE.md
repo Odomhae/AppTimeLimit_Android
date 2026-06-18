@@ -152,6 +152,7 @@ MainActivity (launchMode=singleTop)
 ### Dependency versions (libs.versions.toml)
 
 All versions live in the version catalog. Notable constraints:
+- `minSdk = 26`, `targetSdk = compileSdk = 36`, `applicationId/namespace = com.odom.applimit`. Source/JVM target is **Java 11** — guard any API above API 26 with version checks.
 - `ksp` must match `kotlin` exactly: currently `kotlin = "2.0.21"` / `ksp = "2.0.21-1.0.27"`. Bump KSP first when upgrading Kotlin.
 - `composeBom = "2024.09.00"` → Material3 1.3.0. `LinearProgressIndicator` uses the `progress: () -> Float` lambda API, not the deprecated `Float` param.
 - `playServicesAds = "23.3.0"` — Google Mobile Ads SDK.
