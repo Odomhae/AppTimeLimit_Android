@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1781567625023,
+  "lastScanned": 1782164313368,
   "projectRoot": "C:\\Users\\User\\AndroidStudioProjects\\appLimit",
   "techStack": {
     "languages": [
@@ -34,7 +34,8 @@
     "isMonorepo": false,
     "workspaces": [],
     "mainDirectories": [
-      "app"
+      "app",
+      "docs"
     ],
     "gitBranches": {
       "defaultBranch": "main",
@@ -47,18 +48,32 @@
       "path": "app",
       "purpose": "Application code",
       "fileCount": 4,
-      "lastAccessed": 1781567624735,
+      "lastAccessed": 1782164313205,
       "keyFiles": [
         "AGENTS.md",
         "build.gradle.kts",
         "proguard-rules.pro"
       ]
     },
+    "build": {
+      "path": "build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1782164313214,
+      "keyFiles": []
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 0,
+      "lastAccessed": 1782164313225,
+      "keyFiles": []
+    },
     "gradle": {
       "path": "gradle",
       "purpose": null,
       "fileCount": 2,
-      "lastAccessed": 1781567624764,
+      "lastAccessed": 1782164313234,
       "keyFiles": [
         "AGENTS.md",
         "libs.versions.toml"
@@ -68,14 +83,14 @@
       "path": "app\\build",
       "purpose": "Build output",
       "fileCount": 0,
-      "lastAccessed": 1781567624806,
+      "lastAccessed": 1782164313243,
       "keyFiles": []
     },
     "app\\src": {
       "path": "app\\src",
       "purpose": "Source code",
       "fileCount": 1,
-      "lastAccessed": 1781567624809,
+      "lastAccessed": 1782164313246,
       "keyFiles": [
         "AGENTS.md"
       ]
@@ -84,14 +99,20 @@
   "hotPaths": [
     {
       "path": "app\\src\\main\\java\\com\\odom\\applimit\\ui\\HomeScreen.kt",
-      "accessCount": 23,
-      "lastAccessed": 1781674196356,
+      "accessCount": 50,
+      "lastAccessed": 1782164392844,
       "type": "file"
     },
     {
       "path": "app\\src\\main\\java\\com\\odom\\applimit\\service\\UsageMonitorService.kt",
       "accessCount": 10,
       "lastAccessed": 1781657475202,
+      "type": "file"
+    },
+    {
+      "path": "gradle\\libs.versions.toml",
+      "accessCount": 9,
+      "lastAccessed": 1781676263298,
       "type": "file"
     },
     {
@@ -167,21 +188,15 @@
       "type": "file"
     },
     {
-      "path": "gradle\\libs.versions.toml",
+      "path": "app\\src\\main\\java\\com\\odom\\applimit\\ui\\PermissionSetupScreen.kt",
       "accessCount": 2,
-      "lastAccessed": 1781674109647,
+      "lastAccessed": 1782165810043,
       "type": "file"
     },
     {
       "path": "app\\src\\main\\java\\com\\odom\\applimit\\ui\\NavGraph.kt",
       "accessCount": 1,
       "lastAccessed": 1781567693269,
-      "type": "file"
-    },
-    {
-      "path": "app\\src\\main\\java\\com\\odom\\applimit\\ui\\PermissionSetupScreen.kt",
-      "accessCount": 1,
-      "lastAccessed": 1781567713700,
       "type": "file"
     },
     {
@@ -212,6 +227,12 @@
       "path": "docs\\superpowers\\plans\\2026-06-17-pull-to-refresh.md",
       "accessCount": 1,
       "lastAccessed": 1781673043031,
+      "type": "file"
+    },
+    {
+      "path": "app\\src\\main\\res\\mipmap-anydpi-v26\\ic_launcher.xml",
+      "accessCount": 1,
+      "lastAccessed": 1782164621621,
       "type": "file"
     }
   ],
