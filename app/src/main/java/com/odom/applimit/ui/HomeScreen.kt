@@ -38,7 +38,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -224,7 +223,6 @@ fun HomeScreen(
             )
     ) {
         Scaffold(
-            topBar = { TopAppBar(title = { Text(stringResource(R.string.home_title)) }) },
             bottomBar = { BannerAd() },
             floatingActionButton = {
                 FloatingActionButton(onClick = onAddLimit) {
