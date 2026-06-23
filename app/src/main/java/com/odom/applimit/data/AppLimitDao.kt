@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AppLimitDao {
-    @Query("SELECT * FROM app_limits ORDER BY packageName ASC")
+    @Query("SELECT * FROM app_limits ORDER BY sortOrder ASC")
     fun getAllLimits(): Flow<List<AppLimitEntity>>
 
     @Query("SELECT * FROM app_limits WHERE isEnabled = 1 ORDER BY packageName ASC")
@@ -27,6 +27,9 @@ interface AppLimitDao {
 
     @Update
     suspend fun update(limit: AppLimitEntity)
+
+    @Update
+    suspend fun updateAll(limits: List<AppLimitEntity>)
 
     @Query("UPDATE app_limits SET lastWarningDate = '', lastBlockedDate = '', snoozedMinutes = 0")
     suspend fun resetDailyNotificationFlags()

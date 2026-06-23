@@ -14,6 +14,7 @@
     <string name="cd_edit_limit">제한 편집</string>
     <string name="cd_reset_usage">사용량 초기화</string>
     <string name="cd_remove_limit">제한 삭제</string>
+    <string name="cd_drag_handle">순서 변경</string>
 
     <!-- Add limit screen -->
     <string name="add_limit_select_app">앱 선택</string>

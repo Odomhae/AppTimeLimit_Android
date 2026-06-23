@@ -14,5 +14,7 @@ data class AppLimitEntity(
     // Effective usage = currentUsage - usageAtResetMinutes.
     val usageAtResetMinutes: Int = 0,
     // Minutes added via snooze button; resets to 0 daily at midnight.
-    val snoozedMinutes: Int = 0
+    val snoozedMinutes: Int = 0,
+    // Manual display order set via drag-and-drop reordering on the home screen.
+    val sortOrder: Int = 0
 )

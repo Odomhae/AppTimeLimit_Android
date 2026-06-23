@@ -15,5 +15,7 @@ class AppLimitRepository @Inject constructor(private val dao: AppLimitDao) {
 
     suspend fun delete(limit: AppLimitEntity) = dao.delete(limit)
 
+    suspend fun updateOrder(limits: List<AppLimitEntity>) = dao.updateAll(limits)
+
     suspend fun resetDailyNotificationFlags() = dao.resetDailyNotificationFlags()
 }

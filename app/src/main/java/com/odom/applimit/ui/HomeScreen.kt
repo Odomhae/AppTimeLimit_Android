@@ -19,15 +19,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -43,6 +46,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,10 +55,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.zIndex
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.gms.ads.AdRequest
@@ -82,6 +90,14 @@ fun HomeScreen(
     val usageMap by viewModel.usageMap.collectAsState()
     val isLoadingUsage by viewModel.isLoadingUsage.collectAsState()
     val isPaused by viewModel.isPaused.collectAsState()
+
+    var draggedIndex by remember { mutableStateOf<Int?>(null) }
+    var dragOffsetY by remember { mutableFloatStateOf(0f) }
+    var itemHeightPx by remember { mutableFloatStateOf(0f) }
+    var displayList by remember { mutableStateOf(limits) }
+    LaunchedEffect(limits) {
+        if (draggedIndex == null) displayList = limits
+    }
 
     var editingEntity by remember { mutableStateOf<AppLimitEntity?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -233,7 +249,7 @@ fun HomeScreen(
             Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
                 PauseButton(isPaused = isPaused, onToggle = { viewModel.togglePause() })
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    if (limits.isEmpty()) {
+                    if (displayList.isEmpty()) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -249,19 +265,53 @@ fun HomeScreen(
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(limits, key = { it.packageName }) { limit ->
+                            itemsIndexed(displayList, key = { _, item -> item.packageName }) { index, limit ->
+                                val isDragging = index == draggedIndex
                                 LimitCard(
+                                    modifier = Modifier
+                                        .zIndex(if (isDragging) 1f else 0f)
+                                        .graphicsLayer {
+                                            translationY = if (isDragging) dragOffsetY else 0f
+                                        }
+                                        .onSizeChanged {
+                                            if (itemHeightPx == 0f) itemHeightPx = it.height.toFloat()
+                                        },
                                     limit = limit,
                                     usedMinutes = ((usageMap[limit.packageName] ?: 0L) / 60_000L).toInt(),
                                     appName = resolveAppName(context.packageManager, limit.packageName),
+                                    isDragging = isDragging,
                                     onEditLimit = { editingEntity = limit },
                                     onReset = { pendingResetEntity = limit },
-                                    onDelete = { pendingDeleteEntity = limit }
+                                    onDelete = { pendingDeleteEntity = limit },
+                                    onDragStart = { draggedIndex = index },
+                                    onDrag = { deltaY ->
+                                        dragOffsetY += deltaY
+                                        val currentIndex = draggedIndex ?: index
+                                        if (itemHeightPx > 0f) {
+                                            val moveBy = (dragOffsetY / itemHeightPx).roundToInt()
+                                            if (moveBy != 0) {
+                                                val targetIndex = (currentIndex + moveBy)
+                                                    .coerceIn(0, displayList.lastIndex)
+                                                if (targetIndex != currentIndex) {
+                                                    displayList = displayList.toMutableList().apply {
+                                                        add(targetIndex, removeAt(currentIndex))
+                                                    }
+                                                    draggedIndex = targetIndex
+                                                    dragOffsetY -= moveBy * itemHeightPx
+                                                }
+                                            }
+                                        }
+                                    },
+                                    onDragEnd = {
+                                        draggedIndex = null
+                                        dragOffsetY = 0f
+                                        viewModel.reorder(displayList)
+                                    }
                                 )
                             }
                         }
                     }
-                    if (limits.isNotEmpty() && isLoadingUsage) {
+                    if (displayList.isNotEmpty() && isLoadingUsage) {
                         LinearProgressIndicator(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -321,12 +371,17 @@ private fun EditLimitDialog(
 
 @Composable
 private fun LimitCard(
+    modifier: Modifier = Modifier,
     limit: AppLimitEntity,
     usedMinutes: Int,
     appName: String,
+    isDragging: Boolean,
     onEditLimit: () -> Unit,
     onReset: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit
 ) {
     val context = LocalContext.current
     val progress = (usedMinutes.toFloat() / limit.limitMinutes).coerceIn(0f, 1f)
@@ -337,8 +392,35 @@ private fun LimitCard(
         }.getOrNull()
     }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isDragging) 8.dp else 1.dp
+        )
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DragHandle,
+                    contentDescription = stringResource(R.string.cd_drag_handle),
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .pointerInput(Unit) {
+                            detectDragGestures(
+                                onDragStart = { onDragStart() },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    onDrag(dragAmount.y)
+                                },
+                                onDragEnd = { onDragEnd() },
+                                onDragCancel = { onDragEnd() }
+                            )
+                        }
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

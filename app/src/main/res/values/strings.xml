@@ -14,6 +14,7 @@
     <string name="cd_edit_limit">Edit limit</string>
     <string name="cd_reset_usage">Reset usage</string>
     <string name="cd_remove_limit">Remove limit</string>
+    <string name="cd_drag_handle">Reorder</string>
 
     <!-- Add limit screen -->
     <string name="add_limit_select_app">Select App</string>

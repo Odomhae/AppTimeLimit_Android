@@ -140,11 +140,24 @@ class AppLimitViewModel @Inject constructor(
 
     fun upsertLimit(packageName: String, limitMinutes: Int) {
         viewModelScope.launch {
-            repository.upsert(AppLimitEntity(packageName = packageName, limitMinutes = limitMinutes))
+            val existing = repository.getLimitForPackage(packageName)
+            val entity = existing?.copy(limitMinutes = limitMinutes)
+                ?: AppLimitEntity(
+                    packageName = packageName,
+                    limitMinutes = limitMinutes,
+                    sortOrder = (limits.value.maxOfOrNull { it.sortOrder } ?: -1) + 1
+                )
+            repository.upsert(entity)
         }
     }
 
     fun deleteLimit(entity: AppLimitEntity) {
         viewModelScope.launch { repository.delete(entity) }
+    }
+
+    fun reorder(newOrder: List<AppLimitEntity>) {
+        viewModelScope.launch {
+            repository.updateOrder(newOrder.mapIndexed { index, entity -> entity.copy(sortOrder = index) })
+        }
     }
 }
