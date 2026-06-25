@@ -50,6 +50,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +60,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -91,6 +93,8 @@ fun HomeScreen(
     val isLoadingUsage by viewModel.isLoadingUsage.collectAsState()
     val isPaused by viewModel.isPaused.collectAsState()
 
+    val density = LocalDensity.current
+    val itemSpacingPx = with(density) { 12.dp.toPx() }
     var draggedIndex by remember { mutableStateOf<Int?>(null) }
     var dragOffsetY by remember { mutableFloatStateOf(0f) }
     var itemHeightPx by remember { mutableFloatStateOf(0f) }
@@ -269,6 +273,7 @@ fun HomeScreen(
                                 val isDragging = index == draggedIndex
                                 LimitCard(
                                     modifier = Modifier
+                                        .then(if (isDragging) Modifier else Modifier.animateItem())
                                         .zIndex(if (isDragging) 1f else 0f)
                                         .graphicsLayer {
                                             translationY = if (isDragging) dragOffsetY else 0f
@@ -287,8 +292,9 @@ fun HomeScreen(
                                     onDrag = { deltaY ->
                                         dragOffsetY += deltaY
                                         val currentIndex = draggedIndex ?: index
-                                        if (itemHeightPx > 0f) {
-                                            val moveBy = (dragOffsetY / itemHeightPx).roundToInt()
+                                        val slotHeightPx = itemHeightPx + itemSpacingPx
+                                        if (slotHeightPx > 0f) {
+                                            val moveBy = (dragOffsetY / slotHeightPx).roundToInt()
                                             if (moveBy != 0) {
                                                 val targetIndex = (currentIndex + moveBy)
                                                     .coerceIn(0, displayList.lastIndex)
@@ -297,7 +303,7 @@ fun HomeScreen(
                                                         add(targetIndex, removeAt(currentIndex))
                                                     }
                                                     draggedIndex = targetIndex
-                                                    dragOffsetY -= moveBy * itemHeightPx
+                                                    dragOffsetY -= moveBy * slotHeightPx
                                                 }
                                             }
                                         }
@@ -384,6 +390,9 @@ private fun LimitCard(
     onDragEnd: () -> Unit
 ) {
     val context = LocalContext.current
+    val currentOnDragStart by rememberUpdatedState(onDragStart)
+    val currentOnDrag by rememberUpdatedState(onDrag)
+    val currentOnDragEnd by rememberUpdatedState(onDragEnd)
     val progress = (usedMinutes.toFloat() / limit.limitMinutes).coerceIn(0f, 1f)
     val exceeded = usedMinutes >= limit.limitMinutes
     val icon = remember(limit.packageName) {
@@ -398,28 +407,32 @@ private fun LimitCard(
             defaultElevation = if (isDragging) 8.dp else 1.dp
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(10.dp, 4.dp, 10.dp, 8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                Icon(
-                    imageVector = Icons.Default.DragHandle,
-                    contentDescription = stringResource(R.string.cd_drag_handle),
+                Box(
                     modifier = Modifier
-                        .padding(4.dp)
+                        .size(48.dp)
                         .pointerInput(Unit) {
                             detectDragGestures(
-                                onDragStart = { onDragStart() },
+                                onDragStart = { currentOnDragStart() },
                                 onDrag = { change, dragAmount ->
                                     change.consume()
-                                    onDrag(dragAmount.y)
+                                    currentOnDrag(dragAmount.y)
                                 },
-                                onDragEnd = { onDragEnd() },
-                                onDragCancel = { onDragEnd() }
+                                onDragEnd = { currentOnDragEnd() },
+                                onDragCancel = { currentOnDragEnd() }
                             )
-                        }
-                )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DragHandle,
+                        contentDescription = stringResource(R.string.cd_drag_handle)
+                    )
+                }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),

@@ -86,6 +86,11 @@
     <string name="TEST_admob_interstitial_id">ca-app-pub-3940256099942544/1033173712</string>
     <string name="TEST_admob_banner_id">ca-app-pub-3940256099942544/6300978111</string>
 
+    <!-- AdMob IDs — replace test values with real ones before publishing -->
+    <string name="REAL_admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+    <string name="REAL_admob_interstitial_id">ca-app-pub-3940256099942544/1033173712</string>
+    <string name="REAL_admob_banner_id">ca-app-pub-3940256099942544/6300978111</string>
+
     <!-- Permission setup screen -->
     <string name="perm_title">Setup Required</string>
     <string name="perm_body">ShutApp needs the following permissions to monitor and block apps.</string>
