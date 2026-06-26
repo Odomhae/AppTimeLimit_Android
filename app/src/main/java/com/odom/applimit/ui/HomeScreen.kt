@@ -407,36 +407,9 @@ private fun LimitCard(
             defaultElevation = if (isDragging) 8.dp else 1.dp
         )
     ) {
-        Column(modifier = Modifier.padding(10.dp, 4.dp, 10.dp, 8.dp)) {
+        Column(modifier = Modifier.padding(12.dp, 8.dp, 4.dp, 4.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .pointerInput(Unit) {
-                            detectDragGestures(
-                                onDragStart = { currentOnDragStart() },
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    currentOnDrag(dragAmount.y)
-                                },
-                                onDragEnd = { currentOnDragEnd() },
-                                onDragCancel = { currentOnDragEnd() }
-                            )
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DragHandle,
-                        contentDescription = stringResource(R.string.cd_drag_handle)
-                    )
-                }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 icon?.let {
@@ -460,6 +433,40 @@ private fun LimitCard(
                         else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .pointerInput(Unit) {
+                            detectDragGestures(
+                                onDragStart = { currentOnDragStart() },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    currentOnDrag(dragAmount.y)
+                                },
+                                onDragEnd = { currentOnDragEnd() },
+                                onDragCancel = { currentOnDragEnd() }
+                            )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DragHandle,
+                        contentDescription = stringResource(R.string.cd_drag_handle),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
+                color = if (exceeded) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.primary
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(end = 8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
                 IconButton(onClick = onEditLimit) {
                     Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_edit_limit))
                 }
@@ -470,13 +477,6 @@ private fun LimitCard(
                     Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_remove_limit))
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.fillMaxWidth(),
-                color = if (exceeded) MaterialTheme.colorScheme.error
-                else MaterialTheme.colorScheme.primary
-            )
         }
     }
 }

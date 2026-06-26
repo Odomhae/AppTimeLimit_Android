@@ -141,13 +141,17 @@ MainActivity (launchMode=singleTop)
 
 - **Usage reset baseline** — `AppLimitEntity.usageAtResetMinutes` stores raw minutes at the moment the user taps ↺. Both service and ViewModel compute `effectiveMs = rawMs - (baseline * 60_000)`. `DailyResetWorker` does **not** clear this field.
 
-- **DB is version 3** — `MIGRATION_1_2` adds `usageAtResetMinutes`, `MIGRATION_2_3` adds `snoozedMinutes`, each via `ALTER TABLE ... ADD COLUMN ... NOT NULL DEFAULT 0`. Both are registered in `AppDatabase.getInstance()` via `addMigrations(...)`. Always bump `version` in `@Database` and add a named `Migration` object when changing the schema.
+- **DB is version 4** — migrations: `1→2` adds `usageAtResetMinutes`, `2→3` adds `snoozedMinutes`, `3→4` adds `sortOrder` (with a backfill UPDATE that assigns initial order by `packageName` lexicographic order). All registered via `addMigrations(...)`. Always bump `version` in `@Database` and add a named `Migration` object when changing the schema.
+
+- **Drag-and-drop reordering** — `HomeScreen` manages a local `displayList` (copy of `limits`) with `draggedIndex` / `dragOffsetY` / `itemHeightPx` state. During drag, items are swapped in `displayList` immediately (optimistic UI), then `viewModel.reorder()` persists the new `sortOrder` to DB on drag end. `displayList` only syncs from `limits` when no drag is active (`draggedIndex == null`). `getAllLimits()` DAO query orders by `sortOrder ASC`. The drag handle `pointerInput(Unit)` uses `rememberUpdatedState` for all three callbacks (`onDragStart`, `onDrag`, `onDragEnd`) to avoid stale closure bugs caused by recomposition updating the captured `index` while the coroutine never restarts.
+
+- **`LimitCard` layout structure** — two logical rows: (1) app icon + app name/usage subtitle + drag handle (≡, right-aligned, 48dp), (2) progress bar then action icons (Edit/Reset/Delete) right-aligned below. Do not put action icons in the same row as the app name — they consume ~144dp and cause the name to truncate. The drag handle must remain in the top row's right end so it shares vertical space with the app icon.
 
 - **`foregroundServiceType = specialUse`** — required for `targetSdk = 36`. The manifest must include the `android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE` property.
 
 - **App display name is localized "ShutApp" / "셧앱"** — `app_name` (and all user-facing copy) is `ShutApp` in `values/strings.xml` and `셧앱` in `values-ko/strings.xml`. The package name (`com.odom.applimit`) and internal identifiers (`Theme.AppLimit`, `AppLimitTheme`, `AppLimitViewModel`, etc.) are intentionally left unchanged — they are not user-visible. The blocking-overlay open button reads `R.string.overlay_open_app`, not a hardcoded string.
 
-- **AdMob ad unit IDs** — all IDs in the code reference `R.string.TEST_admob_banner_id` and `R.string.TEST_admob_interstitial_id` (Google test IDs). Replace with real unit IDs in `strings.xml` before publishing. A shared `confirmAdView` instance in `HomeScreen` is reused across the reset and delete confirmation dialogs (they cannot appear simultaneously).
+- **AdMob ad unit IDs** — `strings.xml` contains both `TEST_admob_*` (Google test IDs, used by all code) and `REAL_admob_*` (currently also test values, ready for real IDs). Before publishing, replace `REAL_admob_*` values with production unit IDs and switch all code references from `TEST_admob_*` to `REAL_admob_*`. A shared `confirmAdView` instance in `HomeScreen` is reused across the reset and delete confirmation dialogs (they cannot appear simultaneously).
 
 ### Dependency versions (libs.versions.toml)
 
