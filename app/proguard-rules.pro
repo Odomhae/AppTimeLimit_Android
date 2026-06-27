@@ -12,10 +12,16 @@
 #   public *;
 #}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Preserve line number information for debugging release crash stack traces.
+-keepattributes SourceFile,LineNumberTable
+# Hide the original source file name while keeping line numbers.
+-renamesourcefileattribute SourceFile
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ── WorkManager ─────────────────────────────────────────────
+# Workers are instantiated reflectively by the default WorkerFactory.
+-keep class com.odom.applimit.worker.** { *; }
+
+# ── Room ────────────────────────────────────────────────────
+# Entities are referenced by generated code, but keep them explicitly as a
+# safety net so field names survive (used for the manual migration backfill).
+-keep class com.odom.applimit.data.** { *; }

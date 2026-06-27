@@ -491,7 +491,7 @@ private fun PauseButton(isPaused: Boolean, onToggle: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            stringResource(R.string.btn_pause_limits_ko),
+            stringResource(R.string.btn_pause_limits),
             style = MaterialTheme.typography.bodyMedium
         )
         Switch(
