@@ -65,8 +65,6 @@
     <!-- Global pause -->
     <string name="btn_pause_limits">Pause limits for the weekend</string>
     <string name="btn_resume_limits">Resume limits</string>
-    <string name="btn_pause_limits_ko">주말 동안 제한 일시정지</string>
-    <string name="btn_resume_limits_ko">제한 재개</string>
 
     <!-- Overlay: exit blocked app to home -->
     <string name="overlay_exit_app">Exit App</string>
@@ -87,9 +85,10 @@
     <string name="TEST_admob_banner_id">ca-app-pub-3940256099942544/6300978111</string>
 
     <!-- AdMob IDs — replace test values with real ones before publishing -->
-    <string name="REAL_admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
-    <string name="REAL_admob_interstitial_id">ca-app-pub-3940256099942544/1033173712</string>
-    <string name="REAL_admob_banner_id">ca-app-pub-3940256099942544/6300978111</string>
+    <!-- AdMob IDs — replace test values with real ones before publishing -->
+    <string name="REAL_admob_app_id">ca-app-pub-6729344454320392~2256214973</string>
+    <string name="REAL_admob_interstitial_id">ca-app-pub-6729344454320392/8522240424</string>
+    <string name="REAL_admob_banner_id">ca-app-pub-6729344454320392/4064120664</string>
 
     <!-- Permission setup screen -->
     <string name="perm_title">Setup Required</string>
