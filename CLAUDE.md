@@ -95,16 +95,17 @@ UsageMonitorService (foreground, START_STICKY)
        → AppDatabase.getEnabledLimits()
        → UsageStatsHelper.getTodayUsageMs()   ← queryEvents() replay from startOfDay to now
        → effectiveMinutes = (rawMs / 60_000 - entity.usageAtResetMinutes).coerceAtLeast(0)
-       → UsageStatsHelper.getForegroundApp()  ← queryEvents() 10-min window state machine
+       → UsageStatsHelper.getForegroundApp()  ← queryEvents() start-of-day window state machine
        → at 80%: UsageNotifier.sendWarning()  (once per day via lastWarningDate)
        → at 100% + foreground: BlockingOverlayManager.show()
-       → navigated away: BlockingOverlayManager.hide()
+       → navigated away OR no longer over limit: BlockingOverlayManager.hide()
        → nextPollInterval(): 3s if any app ≥80% used (against effectiveLimit), 10s otherwise
        → snooze button: DB update snoozedMinutes += 15 min  (persisted)
 
 DailyResetWorker (midnight, ExistingWorkPolicy.REPLACE, self-reschedules)
-  └─ resetDailyNotificationFlags(): clears lastWarningDate + lastBlockedDate only
-     (does NOT clear usageAtResetMinutes — irrelevant after UsageStatsManager resets at midnight)
+  └─ resetDailyNotificationFlags(): clears lastWarningDate + lastBlockedDate + snoozedMinutes
+     + usageAtResetMinutes (the ↺ baseline must reset at midnight — raw usage restarts at 0,
+     so a stale baseline would grant that many free minutes every following day)
 
 BlockingOverlayManager (when limit hit)
   └─ show(): two-layer LinearLayout
@@ -139,7 +140,11 @@ MainActivity (launchMode=singleTop)
 
 - **App picker** uses `queryIntentActivities(ACTION_MAIN + CATEGORY_LAUNCHER)` — not `getInstalledApplications()`. Pre-installed apps (YouTube, Instagram) have `FLAG_SYSTEM` set and are missed by flag-based filtering; a launcher-intent query returns exactly what appears in the app drawer. The manifest `<queries>` block declares this intent for Android 11+ visibility.
 
-- **Usage reset baseline** — `AppLimitEntity.usageAtResetMinutes` stores raw minutes at the moment the user taps ↺. Both service and ViewModel compute `effectiveMs = rawMs - (baseline * 60_000)`. `DailyResetWorker` does **not** clear this field.
+- **Usage reset baseline** — `AppLimitEntity.usageAtResetMinutes` stores raw minutes at the moment the user taps ↺. Both service and ViewModel compute `effectiveMs = rawMs - (baseline * 60_000)`. `DailyResetWorker` clears this field at midnight along with the daily flags — raw usage restarts at 0 at midnight, so a leftover baseline would undercount usage every following day.
+
+- **`getForegroundApp()` replays events from start of day, not a short recent window** — during a long continuous session (or while the blocking overlay covers a still-resumed app, since `TYPE_APPLICATION_OVERLAY` does not pause the activity below) the last RESUMED event can be arbitrarily old. A short window would return null, silently skipping the block and auto-hiding an active overlay after the window elapsed.
+
+- **Overlay hides when the shown app is no longer over its limit** — `monitorOnce()` collects `exceededPackages` during the loop and hides the overlay if the shown package left that set (midnight reset, snooze, limit raised, or limit deleted/disabled), in addition to the existing foreground-changed condition.
 
 - **DB is version 4** — migrations: `1→2` adds `usageAtResetMinutes`, `2→3` adds `snoozedMinutes`, `3→4` adds `sortOrder` (with a backfill UPDATE that assigns initial order by `packageName` lexicographic order). All registered via `addMigrations(...)`. Always bump `version` in `@Database` and add a named `Migration` object when changing the schema.
 

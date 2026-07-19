@@ -106,6 +106,7 @@ class UsageMonitorService : Service() {
 
         val today = todayString()
         val foregroundPackage = usageStatsHelper.getForegroundApp()
+        val exceededPackages = mutableSetOf<String>()
 
         for (limit in limits) {
             val usedMs = usageStatsHelper.getTodayUsageMs(limit.packageName) ?: continue
@@ -115,6 +116,7 @@ class UsageMonitorService : Service() {
 
             when {
                 usedMinutes >= effectiveLimit -> {
+                    exceededPackages += limit.packageName
                     if (limit.lastBlockedDate != today) {
                         dao.update(limit.copy(lastBlockedDate = today))
                         val appName = getAppName(limit.packageName)
@@ -143,8 +145,13 @@ class UsageMonitorService : Service() {
             }
         }
 
-        // Hide overlay when user has navigated away from the blocked app
-        if (overlayManager.isShowing() && overlayManager.currentPackage != foregroundPackage) {
+        // Hide overlay when the user has navigated away from the blocked app,
+        // or when the shown app is no longer over its limit (midnight reset,
+        // snooze, limit raised, or limit deleted/disabled).
+        val shownPackage = overlayManager.currentPackage
+        if (overlayManager.isShowing() &&
+            (shownPackage != foregroundPackage || shownPackage !in exceededPackages)
+        ) {
             withContext(Dispatchers.Main) { overlayManager.hide() }
         }
     }

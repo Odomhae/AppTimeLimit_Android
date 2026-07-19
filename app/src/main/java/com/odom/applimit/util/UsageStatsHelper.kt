@@ -8,13 +8,15 @@ import java.util.Calendar
 class UsageStatsHelper(context: Context) {
     private val usageStatsManager = context.getSystemService(UsageStatsManager::class.java)
 
+    private fun startOfDayMs(): Long = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+
     fun getTodayUsageMs(packageName: String): Long? {
-        val startOfDay = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
+        val startOfDay = startOfDayMs()
         val now = System.currentTimeMillis()
         return try {
             val events = usageStatsManager.queryEvents(startOfDay, now)
@@ -47,7 +49,11 @@ class UsageStatsHelper(context: Context) {
     fun getForegroundApp(): String? {
         val now = System.currentTimeMillis()
         return try {
-            val events = usageStatsManager.queryEvents(now - 600_000L, now)
+            // Replay from start of day, not a short recent window: during a long
+            // continuous session (or while the overlay covers a still-resumed app)
+            // the last RESUMED event can be arbitrarily old, and a short window
+            // would miss it and wrongly report no foreground app.
+            val events = usageStatsManager.queryEvents(startOfDayMs(), now)
             val event = UsageEvents.Event()
             var currentForeground: String? = null
             while (events.hasNextEvent()) {
