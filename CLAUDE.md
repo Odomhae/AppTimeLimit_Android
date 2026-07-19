@@ -123,7 +123,7 @@ MainActivity (launchMode=singleTop)
 
 - **Snooze adds 15 minutes to the limit** — `AppLimitEntity.snoozedMinutes` stores extra minutes. Snoozing updates `snoozedMinutes += 15` in DB. `nextPollInterval()` and `monitorOnce()` use `effectiveLimit = limitMinutes + snoozedMinutes` for all calculations. `DailyResetWorker` clears `snoozedMinutes = 0` at midnight alongside `lastWarningDate` / `lastBlockedDate`.
 
-- **`PauseManager` pauses everything until next Monday midnight** — stored in SharedPreferences (`app_limit_prefs` / `paused_until_ms`). `monitorOnce()` checks `PauseManager.isPaused()` as the very first step and hides the overlay + returns early. Used for weekend/vacation exemptions.
+- **`PauseManager` is a recurring weekend pause** — a boolean flag in SharedPreferences (`app_limit_prefs` / `weekend_pause_enabled`). `isPaused()` returns true only when the flag is on **and** today is Saturday or Sunday, so the switch stays on and re-applies every weekend without expiring. The UI switch binds to `isPauseEnabled()` (the raw flag), while `monitorOnce()` checks `isPaused()` as the very first step and hides the overlay + returns early. The legacy `paused_until_ms` key is removed on the next toggle.
 
 - **`UsageStatsManager.queryEvents()` everywhere** — `UsageStatsHelper.getTodayUsageMs()` replays MOVE_TO_FOREGROUND/MOVE_TO_BACKGROUND events from startOfDay to now, then adds `now - lastForegroundMs` for the still-open session. `AppLimitViewModel.effectiveUsageMs()` calls `getTodayUsageMs()` and subtracts the `usageAtResetMinutes` baseline. `queryUsageStats()` is never used — it only commits a session after the app backgrounds, making it useless for real-time display and blocking.
 

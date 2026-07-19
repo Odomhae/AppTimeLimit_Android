@@ -43,7 +43,7 @@ class AppLimitViewModel @Inject constructor(
     private val _isLoadingUsage = MutableStateFlow(true)
     val isLoadingUsage: StateFlow<Boolean> = _isLoadingUsage.asStateFlow()
 
-    private val _isPaused = MutableStateFlow(PauseManager.isPaused(context))
+    private val _isPaused = MutableStateFlow(PauseManager.isPauseEnabled(context))
     val isPaused: StateFlow<Boolean> = _isPaused.asStateFlow()
 
     init {
@@ -56,7 +56,7 @@ class AppLimitViewModel @Inject constructor(
                     }
                     _isLoadingUsage.value = false
                 }
-                _isPaused.value = PauseManager.isPaused(context)
+                _isPaused.value = PauseManager.isPauseEnabled(context)
                 delay(3_000L)
             }
         }
@@ -72,7 +72,7 @@ class AppLimitViewModel @Inject constructor(
                         entity.packageName to effectiveUsageMs(entity)
                     }
                 }
-                _isPaused.value = PauseManager.isPaused(context)
+                _isPaused.value = PauseManager.isPauseEnabled(context)
             } finally {
                 _isLoadingUsage.value = false
             }
@@ -87,12 +87,8 @@ class AppLimitViewModel @Inject constructor(
         (effectiveUsageMs(entity) / 60_000L).toInt()
 
     fun togglePause() {
-        if (PauseManager.isPaused(context)) {
-            PauseManager.resume(context)
-        } else {
-            PauseManager.pause(context)
-        }
-        _isPaused.value = PauseManager.isPaused(context)
+        PauseManager.setPauseEnabled(context, !PauseManager.isPauseEnabled(context))
+        _isPaused.value = PauseManager.isPauseEnabled(context)
     }
 
     fun resetUsage(entity: AppLimitEntity) {

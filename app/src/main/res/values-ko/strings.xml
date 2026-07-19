@@ -63,7 +63,7 @@
     <string name="snooze_button">15분 더 허용</string>
 
     <!-- Global pause -->
-    <string name="btn_pause_limits">주말 동안 제한 일시정지</string>
+    <string name="btn_pause_limits">주말(토·일)에는 제한 일시정지</string>
     <string name="btn_resume_limits">제한 재개</string>
 
     <!-- Overlay: exit blocked app to home -->

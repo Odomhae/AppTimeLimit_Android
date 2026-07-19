@@ -63,7 +63,7 @@
     <string name="snooze_button">Allow 15 min more</string>
 
     <!-- Global pause -->
-    <string name="btn_pause_limits">Pause limits for the weekend</string>
+    <string name="btn_pause_limits">Pause limits on weekends (Sat–Sun)</string>
     <string name="btn_resume_limits">Resume limits</string>
 
     <!-- Overlay: exit blocked app to home -->
