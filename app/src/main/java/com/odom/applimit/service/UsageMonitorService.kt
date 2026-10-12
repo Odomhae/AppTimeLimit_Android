@@ -31,10 +31,6 @@ class UsageMonitorService : Service() {
     private lateinit var usageStatsHelper: UsageStatsHelper
     private lateinit var powerManager: PowerManager
 
-    companion object {
-        private const val SNOOZE_MINUTES = 15
-    }
-
     override fun onCreate() {
         super.onCreate()
         notifier = UsageNotifier(this)
@@ -125,13 +121,7 @@ class UsageMonitorService : Service() {
                     if (foregroundPackage == limit.packageName) {
                         val appName = getAppName(limit.packageName)
                         withContext(Dispatchers.Main) {
-                            overlayManager.show(limit.packageName, appName, usedMinutes, effectiveLimit) {
-                                // Snooze: add 15 minutes to limit, persist to DB.
-                                scope.launch(Dispatchers.IO) {
-                                    val snoozed = limit.copy(snoozedMinutes = limit.snoozedMinutes + SNOOZE_MINUTES)
-                                    dao.update(snoozed)
-                                }
-                            }
+                            overlayManager.show(limit.packageName, appName, usedMinutes, effectiveLimit)
                         }
                     }
                 }

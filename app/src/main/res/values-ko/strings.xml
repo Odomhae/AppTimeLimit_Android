@@ -59,9 +59,6 @@
     <string name="exit_dialog_message">사용량 모니터는 백그라운드에서 계속 실행됩니다.</string>
     <string name="exit_dialog_confirm">종료</string>
 
-    <!-- Snooze -->
-    <string name="snooze_button">15분 더 허용</string>
-
     <!-- Global pause -->
     <string name="btn_pause_limits">주말(토·일)에는 제한 일시정지</string>
     <string name="btn_resume_limits">제한 재개</string>

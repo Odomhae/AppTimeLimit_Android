@@ -34,7 +34,7 @@ class BlockingOverlayManager(private val context: Context) {
 
     fun canDrawOverlays(): Boolean = Settings.canDrawOverlays(context)
 
-    fun show(packageName: String, appName: String, usedMinutes: Int, limitMinutes: Int, onSnooze: () -> Unit) {
+    fun show(packageName: String, appName: String, usedMinutes: Int, limitMinutes: Int) {
         if (!canDrawOverlays()) return
         if (overlayView != null && currentPackage == packageName) return
         hide()
@@ -107,15 +107,6 @@ class BlockingOverlayManager(private val context: Context) {
                 setTextColor(Color.WHITE)
                 setOnClickListener { openAppLimit() }
             })
-            addView(Button(context).apply {
-                text = context.getString(R.string.snooze_button)
-                setBackgroundColor(Color.TRANSPARENT)
-                setTextColor(Color.argb(200, 200, 200, 200))
-                setOnClickListener {
-                    onSnooze()       // DB +15분 업데이트
-                    openAppLimit()   // MainActivity → 전면광고
-                }
-            })
 
             countDownTimer?.cancel()
             countDownTimer = object : CountDownTimer(millisUntilMidnight(), 1_000L) {
@@ -154,7 +145,7 @@ class BlockingOverlayManager(private val context: Context) {
 
         val bannerAd = AdView(context).apply {
             setAdSize(AdSize.BANNER)
-            adUnitId = context.getString(R.string.TEST_admob_banner_id)
+            adUnitId = context.getString(R.string.REAL_admob_banner_id)
             loadAd(AdRequest.Builder().build())
         }
         val container = BlockingLayout(context).apply {

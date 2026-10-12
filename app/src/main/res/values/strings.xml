@@ -59,9 +59,6 @@
     <string name="exit_dialog_message">The usage monitor will continue running in the background.</string>
     <string name="exit_dialog_confirm">Exit</string>
 
-    <!-- Snooze -->
-    <string name="snooze_button">Allow 15 min more</string>
-
     <!-- Global pause -->
     <string name="btn_pause_limits">Pause limits on weekends (Sat–Sun)</string>
     <string name="btn_resume_limits">Resume limits</string>
