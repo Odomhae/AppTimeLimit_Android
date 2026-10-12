@@ -96,4 +96,7 @@
     <string name="perm_overlay_desc">Shows a blocking screen when the limit is reached</string>
     <string name="perm_notif_title">Notifications</string>
     <string name="perm_notif_desc">Sends warnings when approaching your limit</string>
+    <string name="perm_grant_all">Grant permissions</string>
+    <string name="perm_all_done">All set</string>
+    <string name="perm_progress">%1$d / %2$d granted</string>
 </resources>

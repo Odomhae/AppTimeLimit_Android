@@ -95,4 +95,7 @@
     <string name="perm_overlay_desc">한도에 도달하면 차단 화면을 표시합니다</string>
     <string name="perm_notif_title">알림</string>
     <string name="perm_notif_desc">한도에 가까워지면 경고를 보냅니다</string>
+    <string name="perm_grant_all">권한 허용</string>
+    <string name="perm_all_done">모두 완료</string>
+    <string name="perm_progress">%1$d / %2$d 허용됨</string>
 </resources>
