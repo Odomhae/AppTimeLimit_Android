@@ -43,7 +43,11 @@ class UsageMonitorService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         scope.launch {
-            try { monitorOnce() } catch (e: CancellationException) { throw e } catch (_: Exception) {}
+            try {
+                val dao = AppDatabase.getInstance(applicationContext).appLimitDao()
+                if (stopIfNoLimits(dao.getEnabledLimits().isNotEmpty())) return@launch
+                monitorOnce()
+            } catch (e: CancellationException) { throw e } catch (_: Exception) {}
         }
         return START_STICKY
     }
@@ -97,6 +101,7 @@ class UsageMonitorService : Service() {
         val limits = dao.getEnabledLimits()
         if (limits.isEmpty()) {
             withContext(Dispatchers.Main) { overlayManager.hide() }
+            stopIfNoLimits(false)
             return
         }
 
@@ -137,13 +142,21 @@ class UsageMonitorService : Service() {
 
         // Hide overlay when the user has navigated away from the blocked app,
         // or when the shown app is no longer over its limit (midnight reset,
-        // snooze, limit raised, or limit deleted/disabled).
+        // manual reset, limit raised, or limit deleted/disabled).
         val shownPackage = overlayManager.currentPackage
         if (overlayManager.isShowing() &&
             (shownPackage != foregroundPackage || shownPackage !in exceededPackages)
         ) {
             withContext(Dispatchers.Main) { overlayManager.hide() }
         }
+    }
+
+    /** 활성 제한이 하나도 없으면 포그라운드 알림을 제거하고 서비스를 종료한다. */
+    private fun stopIfNoLimits(hasLimits: Boolean): Boolean {
+        if (hasLimits) return false
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+        return true
     }
 
     private fun getAppName(packageName: String): String {

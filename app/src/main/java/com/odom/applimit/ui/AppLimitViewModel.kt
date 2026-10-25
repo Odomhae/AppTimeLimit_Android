@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.odom.applimit.data.AppLimitEntity
 import com.odom.applimit.data.AppLimitRepository
+import com.odom.applimit.service.UsageMonitorService
 import com.odom.applimit.util.PauseManager
 import com.odom.applimit.util.UsageStatsHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -144,6 +145,16 @@ class AppLimitViewModel @Inject constructor(
                     sortOrder = (limits.value.maxOfOrNull { it.sortOrder } ?: -1) + 1
                 )
             repository.upsert(entity)
+            startUsageMonitorService()
+        }
+    }
+
+    private fun startUsageMonitorService() {
+        val intent = Intent(context, UsageMonitorService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
         }
     }
 
