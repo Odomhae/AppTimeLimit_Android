@@ -3,7 +3,7 @@
 # AppTimeLimit_Android
 
 ## Purpose
-Android app that enforces daily per-app usage limits. A foreground service polls `UsageStatsManager` via event replay, and draws a `WindowManager` overlay when a limit is exceeded. Supports per-app snooze, AdMob monetization, and midnight automatic reset.
+Android app that enforces daily per-app usage limits. A foreground service polls `UsageStatsManager` via event replay, and draws a `WindowManager` overlay when a limit is exceeded. Supports a recurring weekend pause, per-app manual usage reset, AdMob monetization, and midnight automatic reset.
 
 ## Key Files
 

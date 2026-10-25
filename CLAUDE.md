@@ -68,7 +68,7 @@ Three permissions are checked at startup by `checkAllPermissionsGranted()` (`Per
 | `SYSTEM_ALERT_WINDOW` (Draw over apps) | `Settings.canDrawOverlays(context)` |
 | `POST_NOTIFICATIONS` (Android 13+ only) | `checkSelfPermission(POST_NOTIFICATIONS)` |
 
-If any are missing, `NavGraph` routes to `PermissionSetupScreen` before `HomeScreen`.
+If any are missing, `NavGraph` routes to `PermissionSetupScreen` before `HomeScreen`. The screen is a single-button auto-advancing wizard: tapping the button sets `running = true` and requests the first ungranted permission; permission state is re-read on `ON_RESUME` and in each launcher callback, and a `LaunchedEffect(permissions)` either calls `onAllGranted()` or, while `running`, requests the next one. Order follows `buildPermissionList()`.
 
 ### Navigation routes
 
@@ -100,7 +100,6 @@ UsageMonitorService (foreground, START_STICKY)
        → at 100% + foreground: BlockingOverlayManager.show()
        → navigated away OR no longer over limit: BlockingOverlayManager.hide()
        → nextPollInterval(): 3s if any app ≥80% used (against effectiveLimit), 10s otherwise
-       → snooze button: DB update snoozedMinutes += 15 min  (persisted)
 
 DailyResetWorker (midnight, ExistingWorkPolicy.REPLACE, self-reschedules)
   └─ resetDailyNotificationFlags(): clears lastWarningDate + lastBlockedDate + snoozedMinutes
@@ -110,7 +109,7 @@ DailyResetWorker (midnight, ExistingWorkPolicy.REPLACE, self-reschedules)
 BlockingOverlayManager (when limit hit)
   └─ show(): two-layer LinearLayout
        → contentFrame (FrameLayout, weight=1) — innerContent + ✕ close button (Gravity.TOP|END)
-           → innerContent — app name, countdown to midnight, "Open ShutApp" button (R.string.overlay_open_app), snooze button
+           → innerContent — app name, countdown to midnight, "Open ShutApp" button (R.string.overlay_open_app)
        → AdView (WRAP_CONTENT) — banner ad pinned to bottom
   └─ "Open ShutApp" / background tap → MainActivity with EXTRA_FROM_BLOCKER=true
   └─ ✕ button → closeAll(): home launcher + killBackgroundProcesses(blockedPkg) + hide
@@ -122,7 +121,7 @@ MainActivity (launchMode=singleTop)
 
 ### Key design decisions
 
-- **Snooze adds 15 minutes to the limit** — `AppLimitEntity.snoozedMinutes` stores extra minutes. Snoozing updates `snoozedMinutes += 15` in DB. `nextPollInterval()` and `monitorOnce()` use `effectiveLimit = limitMinutes + snoozedMinutes` for all calculations. `DailyResetWorker` clears `snoozedMinutes = 0` at midnight alongside `lastWarningDate` / `lastBlockedDate`.
+- **Snooze UI was removed; `snoozedMinutes` is vestigial** — the overlay's "+15 min" button no longer exists (nothing writes `snoozedMinutes` anymore), but the column, the `2→3` migration, the `effectiveLimit = limitMinutes + snoozedMinutes` math in `nextPollInterval()` / `monitorOnce()`, and the midnight `snoozedMinutes = 0` reset all remain. Keep the column (dropping it needs a migration); it is effectively always 0.
 
 - **`PauseManager` is a recurring weekend pause** — a boolean flag in SharedPreferences (`app_limit_prefs` / `weekend_pause_enabled`). `isPaused()` returns true only when the flag is on **and** today is Saturday or Sunday, so the switch stays on and re-applies every weekend without expiring. The UI switch binds to `isPauseEnabled()` (the raw flag), while `monitorOnce()` checks `isPaused()` as the very first step and hides the overlay + returns early. The legacy `paused_until_ms` key is removed on the next toggle.
 
@@ -144,7 +143,7 @@ MainActivity (launchMode=singleTop)
 
 - **`getForegroundApp()` replays events from start of day, not a short recent window** — during a long continuous session (or while the blocking overlay covers a still-resumed app, since `TYPE_APPLICATION_OVERLAY` does not pause the activity below) the last RESUMED event can be arbitrarily old. A short window would return null, silently skipping the block and auto-hiding an active overlay after the window elapsed.
 
-- **Overlay hides when the shown app is no longer over its limit** — `monitorOnce()` collects `exceededPackages` during the loop and hides the overlay if the shown package left that set (midnight reset, snooze, limit raised, or limit deleted/disabled), in addition to the existing foreground-changed condition.
+- **Overlay hides when the shown app is no longer over its limit** — `monitorOnce()` collects `exceededPackages` during the loop and hides the overlay if the shown package left that set (midnight reset, ↺ reset, limit raised, or limit deleted/disabled), in addition to the existing foreground-changed condition.
 
 - **DB is version 4** — migrations: `1→2` adds `usageAtResetMinutes`, `2→3` adds `snoozedMinutes`, `3→4` adds `sortOrder` (with a backfill UPDATE that assigns initial order by `packageName` lexicographic order). All registered via `addMigrations(...)`. Always bump `version` in `@Database` and add a named `Migration` object when changing the schema.
 

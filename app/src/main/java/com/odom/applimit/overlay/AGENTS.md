@@ -21,11 +21,10 @@ Draws a full-screen blocking overlay over the app that has exceeded its daily li
 - Overlay is shown on `Dispatchers.Main` via `withContext` from the service's IO coroutine
 - `show()` is idempotent for the same `packageName` — it returns early if the overlay for that package is already visible
 
-### Snooze Flow
-When the user taps "Allow 15 min more":
-1. `onSnooze()` lambda (provided by `UsageMonitorService`) runs on IO: updates DB to `limitMinutes + 15`, clears `lastBlockedDate`
-2. `openAppLimit()` launches `MainActivity` with `EXTRA_FROM_BLOCKER=true` → triggers interstitial ad
-3. Overlay hides automatically within the next service poll cycle (≤3 s) when the service detects `MainActivity` is in the foreground
+### Buttons
+There is no snooze / "+15 min" button (removed). The overlay has two actions:
+- **"Open ShutApp"** (`R.string.overlay_open_app`) → `openAppLimit()` launches `MainActivity` with `EXTRA_FROM_BLOCKER=true` → triggers interstitial ad. The overlay hides on the next service poll once the blocked app is no longer in the foreground.
+- **✕** (top-right) → `closeAll()`: goes to the home launcher, calls `killBackgroundProcesses(blockedPkg)`, and hides the overlay.
 
 ### Countdown Timer
 The overlay shows a live countdown to midnight using `CountDownTimer(millisUntilMidnight(), 1_000L)`. The timer is cancelled in `hide()` to prevent leaks.
@@ -33,14 +32,16 @@ The overlay shows a live countdown to midnight using `CountDownTimer(millisUntil
 ### Layout Structure
 ```
 BlockingLayout (LinearLayout, MATCH_PARENT × MATCH_PARENT)
-  ├── innerContent (LinearLayout, weight=1, gravity=CENTER)
-  │     ├── app name (TextView, 30sp)
-  │     ├── "Daily limit reached" (TextView, 20sp, red)
-  │     ├── "X / Y minutes used" (TextView, 16sp)
-  │     ├── countdown TextView (18sp)
-  │     ├── hint text (TextView, 14sp)
-  │     ├── "Open App Limit" Button
-  │     └── "Allow 15 min more" Button (snooze)
+  ├── contentFrame (FrameLayout, weight=1)
+  │     ├── innerContent (LinearLayout, gravity=CENTER)
+  │     │     ├── app icon (ImageView, 160px)
+  │     │     ├── app name (TextView, 30sp)
+  │     │     ├── "Daily limit reached" (TextView, 20sp, red)
+  │     │     ├── "X / Y minutes used" (TextView, 16sp)
+  │     │     ├── countdown to midnight (TextView, 48sp)
+  │     │     ├── "resets at midnight" subtitle (TextView, 14sp)
+  │     │     └── "Open ShutApp" Button (gradient)
+  │     └── ✕ close Button (Gravity.TOP|END)
   └── AdView (BANNER, WRAP_CONTENT) — pinned to bottom
 ```
 

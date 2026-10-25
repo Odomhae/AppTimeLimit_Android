@@ -7,8 +7,7 @@ An Android app that enforces daily per-app usage limits. Set a daily time budget
 - **Per-app daily limits** — pick any installed app and set a daily time budget (5 min – 4 hrs)
 - **Real-time tracking** — usage is tracked via `UsageStatsManager` event replay, not polling snapshots, so it reflects the current session immediately
 - **Warning + blocking** — a notification fires at 80% usage; a full-screen overlay blocks the app at 100%, with a button back to the home launcher
-- **Snooze** — grant 15 extra minutes from the blocking overlay when you need a bit more time
-- **Weekend pause** — pause all limits until next Monday for planned breaks
+- **Weekend pause** — a recurring switch that lifts all limits every Saturday and Sunday
 - **Manual reset** — reset a single app's usage counter for the day without waiting for midnight
 - **Survives reboot** — a `BOOT_COMPLETED` receiver restarts the monitor service after the device restarts
 - **Pull-to-refresh** — manually re-sync usage data from the home screen, or it refreshes automatically when the app resumes from background

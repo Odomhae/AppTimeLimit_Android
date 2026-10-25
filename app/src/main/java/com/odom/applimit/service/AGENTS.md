@@ -30,18 +30,21 @@ usedMinutes = effectiveMs / 60_000
 `queryUsageStats()` is never called — it only commits a session after the app backgrounds and is useless for real-time blocking.
 
 ### Foreground Detection
-`getForegroundApp()` uses a 10-minute `queryEvents` window, tracking the last `MOVE_TO_FOREGROUND`/`ACTIVITY_RESUMED` and clearing on `MOVE_TO_BACKGROUND`/`ACTIVITY_PAUSED` to identify the current top app.
+`UsageStatsHelper.getForegroundApp()` replays `queryEvents` from the start of the day (not a short window), tracking the last `MOVE_TO_FOREGROUND`/`ACTIVITY_RESUMED` and clearing on `MOVE_TO_BACKGROUND`/`ACTIVITY_PAUSED` to identify the current top app. A short window would lose a long-running session and auto-hide an active overlay.
 
 ### Blocking Logic (per limit, per poll)
+`effectiveLimit = limitMinutes + snoozedMinutes` (`snoozedMinutes` is always 0 now — see below).
+
 | Condition | Action |
 |-----------|--------|
-| `usedMinutes >= limitMinutes` AND `lastBlockedDate != today` | Update DB, send blocked notification |
-| `usedMinutes >= limitMinutes` AND foreground == blocked pkg | Show overlay (with snooze lambda) |
-| `usedMinutes / limitMinutes >= 0.8f` AND `lastWarningDate != today` | Update DB, send warning notification |
-| Overlay showing AND foreground ≠ blocked pkg | Hide overlay |
+| `usedMinutes >= effectiveLimit` AND `lastBlockedDate != today` | Update DB, send blocked notification |
+| `usedMinutes >= effectiveLimit` AND foreground == blocked pkg | Show overlay |
+| `usedMinutes / effectiveLimit >= 0.8f` AND `lastWarningDate != today` | Update DB, send warning notification |
+| Overlay showing AND (foreground ≠ shown pkg OR shown pkg no longer over limit) | Hide overlay |
+| No enabled limits | Hide overlay, `stopIfNoLimits()` → remove notification + `stopSelf()` |
 
-### Snooze
-`SNOOZE_MINUTES = 15`. Snooze lambda (called from overlay) increments `limitMinutes` by 15 and clears `lastBlockedDate` in the DB. The overlay hides on the next poll when `MainActivity` is detected in the foreground.
+### Snooze (removed)
+The overlay's "+15 min" snooze button and `SNOOZE_MINUTES` were removed. The `snoozedMinutes` DB column is kept (dropping it needs a migration) and is still added into `effectiveLimit` and reset at midnight, but nothing writes to it.
 
 ## Dependencies
 
